@@ -1,6 +1,5 @@
 import time
 import json
-import logging
 import threading
 
 from PyExpLabSys.common.sockets import DataPushSocket
@@ -22,7 +21,7 @@ class CryostatController(threading.Thread):
             'cryostat', ['status', 'data'], timeouts=[999999, 3], port=9000
         )
 
-    def start_dc_4_point(self, i_from, i_to, steps, **kwargs):
+    def start_dc_4_point(self, i_from, i_to, i_steps, **kwargs):
         """
         **kwargs is not actually used, but will eat keywords
         originating from the network syntax.
@@ -30,14 +29,37 @@ class CryostatController(threading.Thread):
         # TODO: Check that measurement is not already running
         # TODO: steps
         t = threading.Thread(target=self.cm.dc_4_point_measurement,
-                             args=(i_from, i_to, steps))
+                             args=(i_from, i_to, i_steps))
+        t.start()
+        return True
+
+    def start_ac_4_point(self, i_from, i_to, i_steps, **kwargs):
+        """
+        **kwargs is not actually used, but will eat keywords
+        originating from the network syntax.
+        """
+        # TODO: Check that measurement is not already running
+        # TODO: steps
+        t = threading.Thread(target=self.cm.ac_4_point_measurement,
+                             args=(i_from, i_to, i_steps))
         t.start()
         return True
 
     def _handle_element(self, element):
-        start = element.get('start_measurement')
-        if start == 'dc_4_point_measurement':
-            self.start_dc_4_point(**element)
+        cmd = element.get('cmd')
+        if cmd == 'start_measurement':
+            if element.get('measurement') == 'ac_4_point':
+                self.start_ac_4_point(**element)
+            if element.get('measurement') == 'dc_4_point':
+                self.start_dc_4_point(**element)
+
+        elif cmd == 'lock_in_frequency':
+            freq = element.get('frequency')
+            print('Set lock in frequency to {}Hz'.format(freq))
+            self.cm.set_lock_in_frequency(freq)
+
+        else:
+            print('Unknown command')
 
     def run(self):
         while not self.quit:
@@ -51,11 +73,6 @@ class CryostatController(threading.Thread):
 
             current_data = json.dumps(self.cm.current_measurement)
             self.pullsocket.set_point_now('data', current_data)
-            # todo: also update status
-            
-            #         value = (element[code], time.time())
-            #         self.values[codename].append(value)
-            #         # self.live_socket.set_point_now(codename, value)
 
 
 def main():
