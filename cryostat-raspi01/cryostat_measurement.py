@@ -42,7 +42,7 @@ class CrystatMeasurement(object):
         self.chamber_name = "dummy"
 
         self.lock_in_frequency = None
-        self.set_lock_in_frequency(1000)
+        self.set_lock_in_frequency(1010)
         self.data_set_saver = DataSetSaver("measurements_" + self.chamber_name,
                                            "xy_values_" + self.chamber_name,
                                            credentials.user, credentials.passwd)
@@ -50,7 +50,10 @@ class CrystatMeasurement(object):
 
     def _identify_all_instruments(self):
         found_all = True
-        nanov1_id = self.nanov1.read_software_version()
+        try:
+            nanov1_id = self.nanov1.read_software_version()
+        except Gpib.gpib.GpibError:
+            nanov1_id = ''
         if nanov1_id.find('MODEL 2182A') > 0:
             # print('Found Keithley 2182A at GPIB 7. Nano Voltmeter')
             pass
@@ -58,7 +61,10 @@ class CrystatMeasurement(object):
             print('Did NOT find 2181A at GPIB 7!!!!!!')
             found_all = False
 
-        lock_in_id = self.lock_in.read_software_version()
+        try:
+            lock_in_id = self.lock_in.read_software_version()
+        except Gpib.gpib.GpibError:
+            lock_in_id = ''
         if lock_in_id.find('SR830') > 0:
             # print('Found SRS 830 at GPIB 8. Lock-In amplifier')
             pass
@@ -66,7 +72,10 @@ class CrystatMeasurement(object):
             print('Did NOT find SRS 830 at GPIB 8!!!')
             found_all = False
 
-        current_source_id = self.current_source.read_software_version()
+        try:
+            current_source_id = self.current_source.read_software_version()
+        except Gpib.gpib.GpibError:
+            current_source_id = ''
         if current_source_id.find('MODEL 6221') > 0:
             # print('Found Keithley 6221 at GPIB 12. Current source')
             pass
@@ -74,7 +83,10 @@ class CrystatMeasurement(object):
             print('Did NOT find 6221 at GPIB 12!!!!!!')
             found_all = False
 
-        dmm_id = self.dmm.read_software_version()
+        try:
+            dmm_id = self.dmm.read_software_version()
+        except Gpib.gpib.GpibError:
+            dmm_id = ''
         if dmm_id.find('MODEL 2000') > 0:
             # print('Found Keithley 2000 at GPIB 16. General purpose DMM')
             pass
@@ -82,7 +94,10 @@ class CrystatMeasurement(object):
             print('Did NOT find Keithley 2000 at GPIB 16!!!')
             found_all = False
 
-        back_gate_id = self.back_gate.read_software_version()
+        try:
+            back_gate_id = self.back_gate.read_software_version()
+        except Gpib.gpib.GpibError:
+            back_gate_id = ''
         # todo: Also check S/N to verify correct instrument is connected
         if back_gate_id.find('MODEL 2400') > 0:
             # print('Found Keithley 2400 at GPIB 22. Use for Back Gate')
@@ -122,7 +137,9 @@ class CrystatMeasurement(object):
             self.current_measurement['type'] = None
             self.current_measurement['type'] = error
         else:
-            self.current_measurement = CURRENT_MEASUREMENT_PROTOTYPE.copy()
+            for key, value in self.current_measurement.items():
+                if isinstance(value, list):
+                    self.current_measurement[key].clear()
             self.current_measurement.update(
                 {
                     'type': measurement_type,
@@ -137,11 +154,12 @@ class CrystatMeasurement(object):
         Here we store the data, both permenantly in the database
         and temporarely in the local dict self.current_measurement
         """
+        print(self.current_measurement['current'])
         now = time.time() - self.current_measurement['start_time']
         for key in self.current_measurement.keys():
             if key in data_point:
                 value = data_point[key]
-                self.current_measurement[key].append(value)
+                self.current_measurement[key].append((now, value))
                 self.data_set_saver.save_point(key, (now, value))
         self.current_measurement['current_time'] = time.time()
 
@@ -159,6 +177,10 @@ class CrystatMeasurement(object):
             self.data_set_saver.add_measurement(key, metadata)
         return True
 
+    def abort_measurement(self):
+        print('ABORT')
+        self.reset_current_measurement(None, error='Aborted')
+
     def _check_I_source_status(self):
         """
         Check that current source is operating as expected
@@ -166,7 +188,7 @@ class CrystatMeasurement(object):
         """
         source_ok = self.current_source.read_status()
         if not source_ok:
-            print('ABORT')
+            print('ABORT DUE TO COMPLIENCE')
             self.reset_current_measurement(None, error=True)
             self.current_source.stop_and_unarm()
             self.current_source.set_current(0)
@@ -206,6 +228,11 @@ class CrystatMeasurement(object):
         self.nanov1.set_integration_time(2)
 
         for current in self._calculate_steps(start, stop, steps):
+            if self.current_measurement['type'] is None:
+                # Measurement has been aborted, skip through the
+                # rest of the steps
+                continue
+
             self.current_source.set_current(current)
             time.sleep(0.02)
             if not self._check_I_source_status():
@@ -269,12 +296,22 @@ class CrystatMeasurement(object):
                            freq=self.lock_in_frequency)
 
         self.reset_current_measurement('ac_sweep')
+
+        # self.dmm.read_ac_voltage()  # Configure DMM for AC measurement
+        
         self._init_ac(start, stop)  # Configure current source
+        time.sleep(1)
+
         current_steps = self._calculate_steps(start, stop, total_steps)
         t = threading.Thread(target=self._ac_4_point_sweep,
                              args=(current_steps,))
         t.start()
         while t.is_alive():
+            if self.current_measurement['type'] is None:
+                # Measurement has been aborted, skip through the
+                # rest of the steps
+                t.stop()
+
             print('waiting')
             time.sleep(1)
         # TODO!! Handle the case of non-succes!
@@ -332,6 +369,8 @@ class CrystatMeasurement(object):
         current_steps = self._calculate_steps(i_start, i_stop, total_i_steps)
 
         for gate_v in gate_steps:
+            if self.current_measurement['type'] is None:
+                continue
             self.back_gate.set_voltage(gate_v)
             time.sleep(0.5)
             self._read_gate()
@@ -340,6 +379,10 @@ class CrystatMeasurement(object):
                                  args=(current_steps,))
             t.start()
             while t.is_alive():
+                if self.current_measurement['type'] is None:
+                    # Measurement has been aborted
+                    t.stop()
+
                 # Backgate can be measured slower than the inner sweep,
                 # we do it periodically while waiting for the sweep
                 print('waiting')
@@ -357,11 +400,11 @@ class CrystatMeasurement(object):
         self.reset_current_measurement(None)
 
     def test(self):
-        self.instrument_id()
+        # self.instrument_id()
         # self.dc_4_point_measurement(1e-6, 1e-4, 100)
         # self.ac_4_point_measurement(1e-6, 1e-4, 100)
-        # self.ac_4_point_measurement(1e-7, 1e-5, 100)
-        self.gated_ac_4_point_measurement(1e-7, 1e-5, 100, 0, 10, 10)
+        self.ac_4_point_measurement(1e-8, 1e-7, 100)
+        # self.gated_ac_4_point_measurement(1e-7, 1e-5, 100, 0, 10, 10)
 
 
 if __name__ == '__main__':
