@@ -10,21 +10,16 @@ from PyExpLabSys.common.value_logger import ValueLogger
 # from PyExpLabSys.common.sockets import DateDataPullSocket
 from PyExpLabSys.common.database_saver import ContinuousDataSaver
 
-# TODO!!!
-# Currently as long as the thread does not crash, the logging
-# will continue, even if no new values are added. We need to
-# invalidate data points after N minutes to prevent them from
-# being re-logged.
+
+TABLE = 'dateplots_environment'
+
+
 class NetworkReader(threading.Thread):
     """ Network reader """
-    def __init__(self, codenames, pushsocket):
+    def __init__(self, pushsocket):
         threading.Thread.__init__(self)
         self.pushsocket = pushsocket
         self.values = {}
-        for codename in codenames:
-            self.values[codename] = collections.deque(maxlen=5)
-        self.codenames = codenames
-
         # If we want a pull- and live-socket, we make it here
         # self.pull_socket = pull_socket
         # livesocket = LiveSocket('NetworkLogger', codenames)
@@ -33,6 +28,14 @@ class NetworkReader(threading.Thread):
         self.quit = False
         self.ttl = 50
 
+    def _add_codename(self, codename):
+        print('NetworkReader, adding codename {}'.format(codename))
+        if codename.find('resistance') > -1:
+            maxlen = 10
+        else:
+            maxlen = 5
+        self.values[codename] = collections.deque(maxlen=maxlen)
+
     def value(self, channel):
         """ Read temperature and  pressure """
         self.ttl = self.ttl - 1
@@ -40,7 +43,7 @@ class NetworkReader(threading.Thread):
         if self.ttl < 0:
             self.quit = True
         else:
-            raw_values = self.values.get(channel)
+            raw_values = self.values.get(channel, [])
             values = []
             for value in raw_values:
                 if (time.time() - value[1]) < 300:
@@ -54,68 +57,128 @@ class NetworkReader(threading.Thread):
             time.sleep(1)
             self.ttl = 50
             qsize = self.pushsocket.queue.qsize()
+            if qsize > 5:
+                print('Queue is currently {} elements long'.format(qsize))
             while qsize > 0:
                 element = self.pushsocket.queue.get()
                 qsize = self.pushsocket.queue.qsize()
-                name = element['location']
-                for code in ['temperature', 'humidity', 'air_pressure']:
-                    if code not in element:
+                # print(element)
+                location = element['location']
+                for key, value in element.items():
+                    if key == 'location':
                         continue
-                    codename = code + '_' + name
-                    value = (element[code], time.time())
-                    self.values[codename].append(value)
+                    codename = key + '_' + location
+                    if codename not in self.values:
+                        self._add_codename(codename)
+                    timed_value = (value, time.time())
+                    self.values[codename].append(timed_value)
                     # self.pull_socket.set_point_now(codename, value)
-                    # self.live_socket.set_point_now(codename, value)
 
 
-def main():
-    """
-    Main function
-    """
-    codenames = [
-        'temperature_309_245', 'humidity_309_245', 'air_pressure_309_245',
-        'temperature_309_257', 'humidity_309_257', 'air_pressure_309_257',
-    ]
+class NetworkLogger(object):
+    def __init__(self):
+        # self.codenames = []
+        self.loggers = {}
 
-    pushsocket = DataPushSocket('device-bridge', action='enqueue')
-    pushsocket.start()
+        self.db_logger = None
+        self.pushsocket = DataPushSocket('device-bridge', action='enqueue')
+        self.pushsocket.start()
 
-    reader = NetworkReader(codenames, pushsocket)
-    reader.start()
+        self.reader = NetworkReader(self.pushsocket)
+        self.reader.start()
 
-    print('Start loggers')
-    loggers = {}
-    for codename in codenames:
-        loggers[codename] = ValueLogger(
-            reader,
-            comp_val=0.5,
+    def add_codename(self, codename, comp_val=0.5):
+        # TODO: Allow a list of codenames, no need to
+        # restart db_connection for every single item
+
+        print('Adding codename: {}'.format(codename))
+        if codename in self.loggers:
+            return
+        # self.codenames.append(codename)
+        self.loggers[codename] = ValueLogger(
+            self.reader,
+            comp_val=comp_val,
             comp_type='lin',
+            maximumtime=600,
             channel=codename
         )
-        loggers[codename].start()
+        self.loggers[codename].name = 'Logger_thread_{}'.format(codename)
+        self.loggers[codename].start()
 
-    table = 'dateplots_environment'
-    print('Start db')
-    db_logger = ContinuousDataSaver(
-        continuous_data_table=table,
-        username=credentials.user,
-        password=credentials.passwd,
-        measurement_codenames=codenames
-    )
-    print('Start logger')
-    db_logger.start()
+        if self.db_logger is not None:
+            self.db_logger.stop()
+            del(self.db_logger)
+        self.db_logger = ContinuousDataSaver(
+            continuous_data_table=TABLE,
+            username=credentials.user,
+            password=credentials.passwd,
+            measurement_codenames=self.loggers.keys()
+        )
+        self.db_logger.start()
+        return codename
 
-    while reader.is_alive():
-        time.sleep(5)
-        print('Check logger')
-        for name in codenames:
-            value = loggers[name].read_value()
-            if loggers[name].read_trigged():
-                msg = '{} is logging value: {}'
-                print(msg.format(name, value))
-                db_logger.save_point_now(name, value)
-                loggers[name].clear_trigged()
+    def main(self):
+        """
+        Main function
+        """
+        # todo, should we ask the sql-server for these?
+        codenames = [
+            ('temperature_309_245', None),
+            ('humidity_309_245', None),
+            ('air_pressure_309_245', None),
+            ('temperature_309_257', None),
+            ('humidity_309_257', None),
+            ('air_pressure_309_257', None),
+            # ('vacuum_309_257', None),
+            ('temperature_309_263', 0.25),
+            ('humidity_309_263', None),
+            ('air_pressure_309_263', None),
+            ('temperature_309_909', None),
+            ('humidity_309_909', None),
+            ('air_pressure_309_909', None),
+            ('temperature_309_926', None),
+            ('humidity_309_926', None),
+            ('air_pressure_309_926', None),
+            ('temperature_309_253', None),
+            ('humidity_309_253', None),
+            ('air_pressure_309_253', None),
+            ('gas_resistance_309_253', 100),
+            ('temperature_309_255', None),
+            ('humidity_309_255', None),
+            ('air_pressure_309_255', None),
+            ('gas_resistance_309_255', 100)
+        ]
+        for codename, comp_val in codenames:
+            if comp_val is None:
+                comp_val = 0.5
+            self.add_codename(codename, comp_val=comp_val)
+
+        n = 0
+        while self.reader.is_alive():
+            n = (n + 1) % 50
+
+            alive = []
+            dead = []
+            for codename in self.loggers.keys():
+                if self.loggers[codename].is_alive():
+                    alive.append(codename)
+                else:
+                    dead.append(codename)
+            if n == 0:
+                print('Alive: {}'.format(alive))
+                print('Dead: {}'.format(dead))
+            # todo: Attempt to re-start dead threads?
+
+            time.sleep(5)
+            for name in self.loggers.keys():
+                value = self.loggers[name].read_value()
+                if self.loggers[name].read_trigged():
+                    msg = '{} is logging value: {}'
+                    print(msg.format(name, value))
+                    self.db_logger.save_point_now(name, value)
+                    self.loggers[name].clear_trigged()
 
 
 if __name__ == '__main__':
-    main()
+    nl = NetworkLogger()
+    nl.main()
