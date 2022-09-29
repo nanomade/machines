@@ -1,0 +1,4 @@
+id: device-bridge
+purpose: Bridge from device wifi to DTU Network
+
+Records parameters from devices connected to the device network.
