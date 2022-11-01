@@ -18,13 +18,13 @@ class NetworkReader(threading.Thread):
     """ Network reader """
     def __init__(self, pushsocket):
         threading.Thread.__init__(self)
+        self.name = 'NetworkReader Thread'
         self.pushsocket = pushsocket
         self.values = {}
         # If we want a pull- and live-socket, we make it here
         # self.pull_socket = pull_socket
         # livesocket = LiveSocket('NetworkLogger', codenames)
         # livesocket.start()
-
         self.quit = False
         self.ttl = 50
 
@@ -82,6 +82,7 @@ class NetworkLogger(object):
 
         self.db_logger = None
         self.pushsocket = DataPushSocket('device-bridge', action='enqueue')
+        self.pushsocket.name = 'push-socket thread'
         self.pushsocket.start()
 
         self.reader = NetworkReader(self.pushsocket)
@@ -114,6 +115,7 @@ class NetworkLogger(object):
             password=credentials.passwd,
             measurement_codenames=self.loggers.keys()
         )
+        self.db_logger.name = 'DB Logger Thread'
         self.db_logger.start()
         return codename
 
@@ -129,7 +131,7 @@ class NetworkLogger(object):
             ('temperature_309_257', None),
             ('humidity_309_257', None),
             ('air_pressure_309_257', None),
-            # ('vacuum_309_257', None),
+            ('house_vacuum_pressure_309_000', 1.0),
             ('temperature_309_263', 0.25),
             ('humidity_309_263', None),
             ('air_pressure_309_263', None),
@@ -139,14 +141,18 @@ class NetworkLogger(object):
             ('temperature_309_926', None),
             ('humidity_309_926', None),
             ('air_pressure_309_926', None),
+            ('temperature_309_252', None),
+            ('humidity_309_252', None),
+            ('air_pressure_309_252', None),
+            ('gas_resistance_309_252', 250),
             ('temperature_309_253', None),
             ('humidity_309_253', None),
             ('air_pressure_309_253', None),
-            ('gas_resistance_309_253', 100),
+            ('gas_resistance_309_253', 400),
             ('temperature_309_255', None),
             ('humidity_309_255', None),
             ('air_pressure_309_255', None),
-            ('gas_resistance_309_255', 100)
+            ('gas_resistance_309_255', 400)
         ]
         for codename, comp_val in codenames:
             if comp_val is None:
