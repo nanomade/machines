@@ -45,7 +45,7 @@ class FlowControl(threading.Thread):
 
 def main():
     """ Main function """
-    port = '/dev/serial/by-id/ort0'
+    port = '/dev/serial/by-id/usb-FTDI_USB-RS485_Cable_AU05DDV3-if00-port0'
     devices = ['23006960', '23006959', '23006958']
     name = 'furnace_mks_mfc_control'
 
