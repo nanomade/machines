@@ -35,14 +35,16 @@ class FlowControl(threading.Thread):
                 self.mks.set_flow(element[mfc], self.mfcs[mfc])
                 qsize = self.pushsocket.queue.qsize()
 
+            print('')
             for mfc in self.mfcs:
-                print('!!!')
                 flow = self.mks.read_flow(self.mfcs[mfc])
                 print(mfc + ': ' + str(flow))
                 self.pullsocket.set_point_now(mfc, flow)
-                self.livesocket.set_point_now(mfc, flow)
+                # self.livesocket.set_point_now(mfc, flow)
 
 
+# TODO! Consider to expand the driver and add some diagnostics, eg. temperatures
+# valve opening or what else can be read from the rs485 interface
 def main():
     """ Main function """
     port = '/dev/serial/by-id/usb-FTDI_USB-RS485_Cable_AU05DDV3-if00-port0'
@@ -52,7 +54,7 @@ def main():
     i = 0
     mfcs = {}
     mks = mks_g_series.MksGSeries(port=port)
-    for i in range(1, 8):
+    for i in range(1, 4):
         time.sleep(2)
         print('!')
         serial = mks.read_serial_number(i)
@@ -64,7 +66,8 @@ def main():
     flow_control.start()
 
     while True:
-        time.sleep(1)
+        time.sleep(2)
+
 
 if __name__ == '__main__':
     main()
