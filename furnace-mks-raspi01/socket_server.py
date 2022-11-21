@@ -13,8 +13,26 @@ class FlowControl(threading.Thread):
         threading.Thread.__init__(self)
         self.mfcs = mfcs
         self.mks = mks_instance
-        self.pullsocket = DateDataPullSocket(name, devices, timeouts=3.0, port=9000)
+
+        socket_names = []
+        timeouts = []
+        for device in devices:
+            socket_names.append(device)
+            socket_names.append(device + '_setpoint')
+            timeouts.append(3.0)
+            timeouts.append(1e9)
+
+        self.pullsocket = DateDataPullSocket(
+            name,
+            socket_names,
+            timeouts=timeouts,
+            port=9000
+        )
         self.pullsocket.start()
+        for device in devices:
+            addr = self.mfcs[device]
+            setpoint = self.mks.read_setpoint(addr)
+            self.pullsocket.set_point_now(device + '_setpoint', setpoint)
 
         self.pushsocket = DataPushSocket(name, action='enqueue')
         self.pushsocket.start()
@@ -32,7 +50,8 @@ class FlowControl(threading.Thread):
                 mfc = list(element.keys())[0]
                 print(element[mfc])
                 print('Queue: ' + str(qsize))
-                self.mks.set_flow(element[mfc], self.mfcs[mfc])
+                self.mks.set_flow(value=element[mfc], addr=self.mfcs[mfc])
+                self.pullsocket.set_point_now(mfc + '_setpoint', element[mfc])
                 qsize = self.pushsocket.queue.qsize()
 
             print('')
