@@ -31,7 +31,7 @@ class NetworkReader(threading.Thread):
     def _add_codename(self, codename):
         print('NetworkReader, adding codename {}'.format(codename))
         if codename.find('resistance') > -1:
-            maxlen = 10
+            maxlen = 20
         else:
             maxlen = 5
         self.values[codename] = collections.deque(maxlen=maxlen)
@@ -54,7 +54,7 @@ class NetworkReader(threading.Thread):
 
     def run(self):
         while not self.quit:
-            time.sleep(1)
+            time.sleep(0.5)
             self.ttl = 50
             qsize = self.pushsocket.queue.qsize()
             if qsize > 5:
@@ -152,7 +152,10 @@ class NetworkLogger(object):
             ('temperature_309_255', None),
             ('humidity_309_255', None),
             ('air_pressure_309_255', None),
-            ('gas_resistance_309_255', 400)
+            ('gas_resistance_309_255', 400),
+            ('temperature_309_918', None),
+            ('humidity_309_918', None),
+            ('air_pressure_309_918', None)
         ]
         for codename, comp_val in codenames:
             if comp_val is None:
