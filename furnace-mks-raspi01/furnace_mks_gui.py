@@ -115,6 +115,8 @@ def main():
             except ValueError:
                 window['H2_setpoint'].update('0')
 
+            event, values = window.read(timeout=10)
+            
             for serial, name in MFCs.items():
                 label = '{}_setpoint'.format(name)
                 setpoint = float(values[label])
