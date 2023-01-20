@@ -88,7 +88,7 @@ class NetworkLogger(object):
         self.reader = NetworkReader(self.pushsocket)
         self.reader.start()
 
-    def add_codename(self, codename, comp_val=0.5):
+    def add_codename(self, codename, comp_val=0.5, comp_type='lin'):
         # TODO: Allow a list of codenames, no need to
         # restart db_connection for every single item
 
@@ -99,7 +99,7 @@ class NetworkLogger(object):
         self.loggers[codename] = ValueLogger(
             self.reader,
             comp_val=comp_val,
-            comp_type='lin',
+            comp_type=comp_type,
             maximumtime=600,
             channel=codename
         )
@@ -125,42 +125,44 @@ class NetworkLogger(object):
         """
         # todo, should we ask the sql-server for these?
         codenames = [
-            ('temperature_309_245', None),
-            ('humidity_309_245', None),
-            ('air_pressure_309_245', None),
-            ('temperature_309_257', None),
-            ('humidity_309_257', None),
-            ('air_pressure_309_257', None),
-            ('house_vacuum_pressure_309_000', 1.0),
-            ('temperature_309_263', 0.25),
-            ('humidity_309_263', None),
-            ('air_pressure_309_263', None),
-            ('temperature_309_909', None),
-            ('humidity_309_909', None),
-            ('air_pressure_309_909', None),
-            ('temperature_309_926', None),
-            ('humidity_309_926', None),
-            ('air_pressure_309_926', None),
-            ('temperature_309_252', None),
-            ('humidity_309_252', None),
-            ('air_pressure_309_252', None),
-            ('gas_resistance_309_252', 250),
-            ('temperature_309_253', None),
-            ('humidity_309_253', None),
-            ('air_pressure_309_253', None),
-            ('gas_resistance_309_253', 400),
-            ('temperature_309_255', None),
-            ('humidity_309_255', None),
-            ('air_pressure_309_255', None),
-            ('gas_resistance_309_255', 400),
-            ('temperature_309_918', None),
-            ('humidity_309_918', None),
-            ('air_pressure_309_918', None)
+            ('temperature_309_245', None, 'lin'),
+            ('humidity_309_245', None, 'lin'),
+            ('air_pressure_309_245', None, 'lin'),
+            ('temperature_309_257', None, 'lin'),
+            ('humidity_309_257', None, 'lin'),
+            ('air_pressure_309_257', None, 'lin'),
+            ('house_vacuum_pressure_309_000', 1.0, 'lin'),
+            ('temperature_309_263', 0.25, 'lin'),
+            ('humidity_309_263', None, 'lin'),
+            ('air_pressure_309_263', None, 'lin'),
+            ('temperature_309_909', None, 'lin'),
+            ('humidity_309_909', None, 'lin'),
+            ('air_pressure_309_909', None, 'lin'),
+            ('temperature_309_926', None, 'lin'),
+            ('humidity_309_926', None, 'lin'),
+            ('air_pressure_309_926', None, 'lin'),
+            ('temperature_309_252', None, 'lin'),
+            ('humidity_309_252', None, 'lin'),
+            ('air_pressure_309_252', None, 'lin'),
+            ('gas_resistance_309_252', 250, 'lin'),
+            ('temperature_309_253', None, 'lin'),
+            ('humidity_309_253', None, 'lin'),
+            ('air_pressure_309_253', None, 'lin'),
+            ('gas_resistance_309_253', 400, 'lin'),
+            ('temperature_309_255', None, 'lin'),
+            ('humidity_309_255', None, 'lin'),
+            ('air_pressure_309_255', None, 'lin'),
+            ('gas_resistance_309_255', 400, 'lin'),
+            ('temperature_309_918', None, 'lin'),
+            ('humidity_309_918', None, 'lin'),
+            ('air_pressure_309_918', None, 'lin'),
+            ('p_gas_side_309_gas_diffusion_setup', 0.02, 'lin'),
+            ('p_pump_side_309_gas_diffusion_setup', 0.02, 'lin')
         ]
-        for codename, comp_val in codenames:
+        for codename, comp_val, comp_type in codenames:
             if comp_val is None:
                 comp_val = 0.5
-            self.add_codename(codename, comp_val=comp_val)
+            self.add_codename(codename, comp_val=comp_val, comp_type=comp_type)
 
         n = 0
         while self.reader.is_alive():
@@ -178,7 +180,7 @@ class NetworkLogger(object):
                 print('Dead: {}'.format(dead))
             # todo: Attempt to re-start dead threads?
 
-            time.sleep(5)
+            time.sleep(2)
             for name in self.loggers.keys():
                 value = self.loggers[name].read_value()
                 if self.loggers[name].read_trigged():
