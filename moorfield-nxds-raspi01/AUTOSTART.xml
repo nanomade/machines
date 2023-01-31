@@ -1,0 +1,8 @@
+<autostart>
+  <name>MOORFIELD_nXDS_AUTOSTART</name> <!-- no spaces -->
+  <session>
+    <startdelay>15</startdelay>
+    <command>python ~/PyExpLabSys/PyExpLabSys/apps/edwards_nxds_logger.py</command>
+    <name>Edwards Rough Pump</name>
+  </session>
+</autostart>
