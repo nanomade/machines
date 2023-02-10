@@ -1,0 +1,5 @@
+id: gas-alarm-furnace-room
+purpose: Logging of gas-alarm an environment in furnace room
+
+Logs the values of the gas alarm as well as environmental
+parameters in the furnace room.

@@ -1,0 +1,15 @@
+<autostart>
+  <name>FurnaceRoomLogger</name> <!-- no spaces -->
+  <session>
+    <startdelay>5</startdelay>
+    <command>python datalogger_gasalarm.py</command>
+    <name>Gas alarm logger</name>
+  </session>
+
+  <session>
+    <startdelay>15</startdelay>
+    <command>python datalogger_bme.py</command>
+    <name>BME Logger</name>
+  </session>
+
+</autostart>
