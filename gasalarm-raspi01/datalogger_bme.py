@@ -32,7 +32,7 @@ class BMEReader(threading.Thread):
             'temperature_309_260': collections.deque(maxlen=2),
             'humidity_309_260': collections.deque(maxlen=5),
             'air_pressure_309_260': collections.deque(maxlen=3),
-            'gas_resistance_309_260': collections.deque(maxlen=20)
+            'gas_resistance_309_260': collections.deque(maxlen=30)
         }
         self.quit = False
         self.ttl = 50
@@ -97,7 +97,7 @@ class Logger(object):
             )
             self.loggers[codename].name = 'Logger_thread_{}'.format(codename)
             self.loggers[codename].start()
-        compare = {'type': 'log', 'val': 0.05}
+        compare = {'type': 'log', 'val': 0.15}
         self.loggers['gas_resistance_309_260'].compare.update(compare)
 
     def main(self):
