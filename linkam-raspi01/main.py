@@ -6,14 +6,16 @@ from PyExpLabSys.common.sockets import DateDataPullSocket
 
 # This is not very abstract, see inspiration on how to do this
 # at the cryostat
-from linkam_one_shot_van_der_pauw import LinkamOneShotVanDerPauw
+# Soon we will also need constant-gate and thus will need to
+# improve abstraction level
+from linkam_one_shot_van_der_pauw import LinkamSweepedOneShotVDP
 
 
 class LinkamController(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.quit = False
-        self.lm = LinkamOneShotVanDerPauw()
+        self.lm = LinkamSweepedOneShotVDP()
 
         self.pushsocket = DataPushSocket('Linkam', action='enqueue')
         self.pushsocket.start()
@@ -23,6 +25,22 @@ class LinkamController(threading.Thread):
             timeouts=[999999, 30, 30, 30], port=9000
         )
         self.pullsocket.start()
+
+    def _handle_element(self, element):
+        cmd = element.get('cmd')
+        if cmd == 'start_measurement':
+            print(element.get('measurement'))
+            if element.get('measurement') == 'one_shot_vdp':
+                self.start_one_shot_vdp(**element)
+
+        elif cmd == 'abort':
+            self.lm.abort_measurement()
+            # print('Abort current measurement')
+            # print('Currently measurement is:')
+            # print(self.lm.current_measurement['type'])
+            # print()
+        else:
+            print('Unknown command')
 
     def start_one_shot_vdp(  # Could this be just **kwargs?
             self, comment: str, v_low: float, v_high: float,
@@ -50,24 +68,7 @@ class LinkamController(threading.Thread):
         t.start()
         return True
 
-    def _handle_element(self, element):
-        cmd = element.get('cmd')
-        if cmd == 'start_measurement':
-            print(element.get('measurement'))
-            if element.get('measurement') == 'one_shot_vdp':
-                self.start_one_shot_vdp(**element)
-
-        # elif cmd == 'lock_in_frequency':
-        #     freq = element.get('frequency')
-        #     print('Set lock in frequency to {}Hz'.format(freq))
-        #     self.cm.set_lock_in_frequency(freq)
-
-        else:
-            print('Unknown command')
-
     def run(self):
-        # IMPLEMENT AN ABORT COMMAND
-
         while not self.quit:
             time.sleep(1)
             print('Running')
