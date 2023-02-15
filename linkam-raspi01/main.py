@@ -15,7 +15,8 @@ class LinkamController(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.quit = False
-        self.lm = LinkamSweepedOneShotVDP()
+        # Default to Sweeped One Shot
+        self.measurement = LinkamSweepedOneShotVDP()
 
         self.pushsocket = DataPushSocket('Linkam', action='enqueue')
         self.pushsocket.start()
@@ -31,7 +32,7 @@ class LinkamController(threading.Thread):
         if cmd == 'start_measurement':
             print(element.get('measurement'))
             if element.get('measurement') == 'one_shot_vdp':
-                self.start_one_shot_vdp(**element)
+                self.start_sweeped_one_shot_vdp(**element)
 
         elif cmd == 'abort':
             self.lm.abort_measurement()
@@ -42,15 +43,16 @@ class LinkamController(threading.Thread):
         else:
             print('Unknown command')
 
-    def start_one_shot_vdp(self, **kwargs):
+    def start_sweeped_one_shot_vdp(self, **kwargs):
         """
         Start the sweeped Van der Pauw measurement
         Arguments are fed directly from the udp socket, we could consider to do a
         verification step and report error rather than crash on missing arguments.
         """
         # TODO: Check that measurement is not already running
+        self.measurement = LinkamSweepedOneShotVDP()
         t = threading.Thread(
-            target=self.lm.one_shot_van_der_pauw,
+            target=self.measurement.sweeped_one_shot_vdp,
             kwargs=kwargs,
         )
         t.start()
@@ -66,16 +68,16 @@ class LinkamController(threading.Thread):
                 qsize = self.pushsocket.queue.qsize()
                 self._handle_element(element)
 
-            lm = self.lm.current_measurement
-            self.pullsocket.set_point_now('v_backgate', lm['v_backgate'])
-            self.pullsocket.set_point_now('lock_in_v1', lm['lock_in_v1'])
-            self.pullsocket.set_point_now('lock_in_v2', lm['lock_in_v2'])
+            meas = self.measurement.current_measurement
+            self.pullsocket.set_point_now('v_backgate', meas['v_backgate'])
+            self.pullsocket.set_point_now('lock_in_v1', meas['lock_in_v1'])
+            self.pullsocket.set_point_now('lock_in_v2', meas['lock_in_v2'])
 
-            current_measurement = self.lm.current_measurement['type']
+            current_measurement = self.measurement.current_measurement['type']
             if not current_measurement:
                 current_measurement = 'Idle'
             self.pullsocket.set_point_now('status', current_measurement)
-            print(self.lm.current_measurement['type'])
+            print(self.measurement.current_measurement['type'])
 
 
 def main():
