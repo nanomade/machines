@@ -59,7 +59,7 @@ class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
 
     def one_shot_van_der_pauw(
             self, comment: str, v_low: float, v_high: float, compliance: float,
-            total_steps: int, repeats: int, time_pr_step, end_wait: int
+            total_steps: int, repeats: int, time_pr_step, end_wait: int, **kwargs
     ):
         """
         Perform a one-shot Van der Pauw using a gate and two LockIn amplifiers
