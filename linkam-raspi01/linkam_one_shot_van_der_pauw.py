@@ -6,7 +6,7 @@ import threading
 from linkam_measurement_base import LinkamMeasurementBase
 
 
-class LinkamOneShotVanDerPauw(LinkamMeasurementBase):
+class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
     def __init__(self):
         super().__init__()
         # self.source_logger_1.set_range(10)
@@ -34,58 +34,28 @@ class LinkamOneShotVanDerPauw(LinkamMeasurementBase):
         """
         Perform a gate-sweep.
         """
-        self.back_gate.set_source_function('v')
-        self.back_gate.set_current_limit(compliance)
-        self.back_gate.set_voltage(0)
-        self.back_gate.output_state(True)
-        time.sleep(1)
-        t_step_start = time.time()
+        self._prepare_gate(compliance)
+        self._read_current_sources()
+        completed = self._step_measure(steps, time_pr_step)
 
-        current_1 = self.source_logger_1.read_ac_voltage() / 1e6
-        current_2 = self.source_logger_2.read_ac_voltage() / 1e6
-        data = {'current_1': current_1, 'current_2': current_2}
-        self.add_to_current_measurement(data)
+        if not completed:  # Measurement has been aborted
+            # Cancel global abort, we need to get the step-functionality back
+            self.aborted = False
+            gate_v = self.back_gate.read_voltage()
+            steps = np.arange(gate_v, 0, -0.1 * np.sign(gate_v))
+            self._step_measure(steps, 0.2)
 
-        for step in steps:
-            # print('Step loop was', time.time() - t_step_start, step)
-            t_step_start = time.time()
-            self.back_gate.set_voltage(step)  # ~5ms
-            self._read_gate()  # ~200ms - why so slow?
-
-            dt = time.time() - t_step_start
-            if dt < time_pr_step:
-                time.sleep(time_pr_step - dt)
-
-            v_1, theta_1, _ = self.lock_in_1.read_r_and_theta()  # ~35ms
-            v_2, theta_2, _ = self.lock_in_2.read_r_and_theta()  # ~35ms
-
-            data = {
-                'lock_in_v1': v_1, 'lock_in_v2': v_2,
-                'theta_1': theta_1, 'theta_2': theta_2,
-            }
-            self.add_to_current_measurement(data)
-
-        current_1 = self.source_logger_1.read_ac_voltage() / 1e6
-        current_2 = self.source_logger_2.read_ac_voltage() / 1e6
-        data = {'current_1': current_1, 'current_2': current_2}
-        self.add_to_current_measurement(data)
-
+        # zig-zag step is done, now perform end_wait
+        self._read_current_sources()
         t_end = time.time() + end_wait
         while time.time() < t_end:
             time.sleep(time_pr_step)
             self._read_gate()
-            v_1, theta_1, _ = self.lock_in_1.read_r_and_theta()
-            v_2, theta_2, _ = self.lock_in_2.read_r_and_theta()
-            data = {
-                'lock_in_v1': v_1, 'lock_in_v2': v_2,
-                'theta_1': theta_1, 'theta_2': theta_2,
-            }
-            self.add_to_current_measurement(data)
+            self._read_lock_ins()
+        self._read_current_sources()
 
-        current_1 = self.source_logger_1.read_ac_voltage() / 1e6
-        current_2 = self.source_logger_2.read_ac_voltage() / 1e6
-        data = {'current_1': current_1, 'current_2': current_2}
-        self.add_to_current_measurement(data)
+    def abort_measurement(self):
+        self.aborted = True
 
     def one_shot_van_der_pauw(
             self, comment: str, v_low: float, v_high: float, compliance: float,
@@ -113,49 +83,32 @@ class LinkamOneShotVanDerPauw(LinkamMeasurementBase):
         self._add_metadata(labels, meas_type=204, comment=comment)
         self.reset_current_measurement('one_shot_van_der_pauw')
 
-        # self.dmm.read_ac_voltage()  # Configure DMM for AC measurement
-        # self._init_ac(start, stop)  # Configure current source
-        # time.sleep(3)
-
         steps = self._calculate_steps(v_low, v_high, total_steps, repeats)
         t = threading.Thread(target=self._gate_sweep,
                              args=(steps, time_pr_step, end_wait, compliance))
         t.start()
         while t.is_alive():
-            # current_1 = self.source_logger_1.read_ac_voltage() / 1e6
-            # current_2 = self.source_logger_2.read_ac_voltage() / 1e6
-            # data = {
-            #    'current_1': current_1, 'current_2': current_2
-
-            # }
-            # self.add_to_current_measurement(data)
             if self.current_measurement['type'] is None:
-                # Measurement has been aborted, skip through the
-                # rest of the steps
+                # Measurement has been aborted, skip through the rest of the steps
                 t.stop()
-
             print('waiting')
-            time.sleep(5)
-        # TODO!! Handle the case of non-succes!
-        # if self.current_measurement['error']:
+            time.sleep(2)
 
-        # # Indicate that the measurment is completed
-        # self.current_source.stop_and_unarm()
         self.reset_current_measurement(None)
 
     def test(self):
-        # self.instrument_id()
-        # self.set_lock_in_frequency(12523.2)
         self.one_shot_van_der_pauw(
+            comment='Test from python code',
             v_low=-3.0,
             v_high=3.0,
             total_steps=51,
             repeats=5,
             time_pr_step=0.1,
-            end_wait=10
+            end_wait=10,
+            compliance=1e-4,
         )
 
 
 if __name__ == '__main__':
-    Test = LinkamOneShotVanDerPauw()
+    Test = LinkamSweepedOneShotVDP()
     Test.test()
