@@ -8,7 +8,7 @@ from PyExpLabSys.common.sockets import DateDataPullSocket
 # at the cryostat
 # Soon we will also need constant-gate and thus will need to
 # improve abstraction level
-from linkam_one_shot_van_der_pauw import LinkamSweepedOneShotVDP
+from linkam_sweeped_one_show_vdp import LinkamSweepedOneShotVDP
 
 
 class LinkamController(threading.Thread):
@@ -42,28 +42,16 @@ class LinkamController(threading.Thread):
         else:
             print('Unknown command')
 
-    def start_one_shot_vdp(  # Could this be just **kwargs?
-            self, comment: str, v_low: float, v_high: float,
-            compliance: float, total_steps: int,
-            repeats: int, time_pr_step, end_wait: int, **kwargs
-    ):
+    def start_one_shot_vdp(self, **kwargs):
         """
-        **kwargs is not actually used, but will eat keywords
-        originating from the network syntax.
+        Start the sweeped Van der Pauw measurement
+        Arguments are fed directly from the udp socket, we could consider to do a
+        verification step and report error rather than crash on missing arguments.
         """
         # TODO: Check that measurement is not already running
         t = threading.Thread(
             target=self.lm.one_shot_van_der_pauw,
-            args=(  # Could this be just **kwargs
-                comment,
-                v_low,
-                v_high,
-                compliance,
-                total_steps,
-                repeats,
-                time_pr_step,
-                end_wait
-            )
+            kwargs=kwargs,
         )
         t.start()
         return True
