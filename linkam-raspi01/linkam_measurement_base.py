@@ -38,6 +38,7 @@ class LinkamMeasurementBase(object):
         self.source_logger_2 = Keithley2000(interface='gpib', gpib_address=15)
 
         self.chamber_name = "dummy"
+        self.aborted = False
         self._restart_data_set_saver()
 
     def _restart_data_set_saver(self):
@@ -128,12 +129,38 @@ class LinkamMeasurementBase(object):
         self.add_to_current_measurement(data)
         return current_1, current_2
 
+    def _read_lock_ins(self):
+        v_1, theta_1, _ = self.lock_in_1.read_r_and_theta()  # ~35ms
+        v_2, theta_2, _ = self.lock_in_2.read_r_and_theta()  # ~35ms
+
+        data = {
+            'lock_in_v1': v_1, 'lock_in_v2': v_2,
+            'theta_1': theta_1, 'theta_2': theta_2,
+        }
+        self.add_to_current_measurement(data)
+
     def _prepare_gate(self, compliance):
         self.back_gate.set_source_function('v')
         self.back_gate.set_current_limit(compliance)
         self.back_gate.set_voltage(0)
         self.back_gate.output_state(True)
         time.sleep(1)
+        return True
+
+    def _step_measure(self, steps, time_pr_step):
+        for step in steps:
+            if self.aborted:
+                return False
+            # print('Step loop was', time.time() - t_step_start, step)
+            t_step_start = time.time()
+            self.back_gate.set_voltage(step)  # ~5ms
+            self._read_gate()  # ~200ms - why so slow?
+
+            dt = time.time() - t_step_start
+            if dt < time_pr_step:
+                time.sleep(time_pr_step - dt)
+            self._read_lock_ins()
+        return True
 
     def _add_metadata(self, labels, meas_type, comment, timestep=None, freq=None):
         try:
@@ -202,8 +229,9 @@ class LinkamMeasurementBase(object):
         self.current_measurement['current_time'] = time.time()
 
     def abort_measurement(self):
-        print('ABORT')
-        self.reset_current_measurement(None, error='Aborted')
+        # self.reset_current_measurement(None, error='Aborted')
+        # As minimum, implementation should set self.aborted to True
+        raise NotImplementedError
 
 
 if __name__ == '__main__':
