@@ -57,7 +57,7 @@ class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
     def abort_measurement(self):
         self.aborted = True
 
-    def one_shot_van_der_pauw(
+    def sweeped_one_shot_vdp(
             self, comment: str, v_low: float, v_high: float, compliance: float,
             total_steps: int, repeats: int, time_pr_step, end_wait: int, **kwargs
     ):
@@ -97,7 +97,7 @@ class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
         self.reset_current_measurement(None)
 
     def test(self):
-        self.one_shot_van_der_pauw(
+        self.sweeped_one_shot_vdp(
             comment='Test from python code',
             v_low=-3.0,
             v_high=3.0,
