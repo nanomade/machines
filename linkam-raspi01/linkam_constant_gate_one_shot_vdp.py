@@ -63,7 +63,7 @@ class LinkamConstantGateVDP(LinkamMeasurementBase):
             self.add_to_current_measurement(data)
         self._read_current_sources()
 
-    def constant_gate_one_shot_vdp(
+    def start_constant_gate_one_shot_vdp(
             self, comment: str, gate_voltage: float, compliance: float,
             steps: int, time_pr_step, meas_time: float, end_wait: float
     ):
@@ -113,7 +113,7 @@ class LinkamConstantGateVDP(LinkamMeasurementBase):
         self.reset_current_measurement(None)
 
     def test(self):
-        self.constant_gate_one_shot_vdp(
+        self.start_constant_gate_one_shot_vdp(
             comment='Python test function',
             gate_voltage=5,
             compliance=1e-5,
