@@ -4,11 +4,8 @@ import threading
 from PyExpLabSys.common.sockets import DataPushSocket
 from PyExpLabSys.common.sockets import DateDataPullSocket
 
-# This is not very abstract, see inspiration on how to do this
-# at the cryostat
-# Soon we will also need constant-gate and thus will need to
-# improve abstraction level
-from linkam_sweeped_one_show_vdp import LinkamSweepedOneShotVDP
+from linkam_sweeped_one_shot_vdp import LinkamSweepedOneShotVDP
+from linkam_constant_gate_one_shot_vdp import LinkamConstantGateVDP
 
 
 class LinkamController(threading.Thread):
@@ -31,11 +28,13 @@ class LinkamController(threading.Thread):
         cmd = element.get('cmd')
         if cmd == 'start_measurement':
             print(element.get('measurement'))
-            if element.get('measurement') == 'one_shot_vdp':
+            if element.get('measurement') == 'sweeped_one_shot_vdp':
                 self.start_sweeped_one_shot_vdp(**element)
+            elif element.get('measurement') == 'constant_gate_one_shot_vdp':
+                self.start_constant_gate_one_shot_vdp(**element)
 
         elif cmd == 'abort':
-            self.lm.abort_measurement()
+            self.measurement.abort_measurement()
             # print('Abort current measurement')
             # print('Currently measurement is:')
             # print(self.lm.current_measurement['type'])
@@ -43,16 +42,16 @@ class LinkamController(threading.Thread):
         else:
             print('Unknown command')
 
-    def start_sweeped_one_shot_vdp(self, **kwargs):
+    def constant_gate_one_shot_vdp(self, **kwargs):
         """
         Start the sweeped Van der Pauw measurement
         Arguments are fed directly from the udp socket, we could consider to do a
         verification step and report error rather than crash on missing arguments.
         """
         # TODO: Check that measurement is not already running
-        self.measurement = LinkamSweepedOneShotVDP()
+        self.measurement = LinkamConstantGateVDP()
         t = threading.Thread(
-            target=self.measurement.sweeped_one_shot_vdp,
+            target=self.measurement.constant_gate_one_shot_vdp,
             kwargs=kwargs,
         )
         t.start()
