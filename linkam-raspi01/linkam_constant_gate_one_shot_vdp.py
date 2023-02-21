@@ -31,11 +31,10 @@ class LinkamConstantGateVDP(LinkamMeasurementBase):
         up = list(np.arange(0, gate_voltage, step_size)) + [gate_voltage]
         down = list(np.arange(gate_voltage, 0, -1 * step_size)) + [0]
 
-        self._step_measure(up, time_pr_step)
-        self._read_current_sources()
+        up_completed = self._step_measure(up, time_pr_step)
 
         t_end = time.time() + meas_time
-        while time.time() < t_end:
+        while time.time() < t_end and not self.aborted:
             time.sleep(time_pr_step)
             self._read_gate()
             v_1, theta_1, _ = self.lock_in_1.read_r_and_theta()
@@ -47,7 +46,14 @@ class LinkamConstantGateVDP(LinkamMeasurementBase):
             self.add_to_current_measurement(data)
             self._read_current_sources()
 
-        # TODO!!! Perform wait step
+        # Independent of if the measurement was aborted or not, we now
+        # need to have access to self._step_measure()
+        self.aborted = False
+
+        if not up_completed:
+            # Up was never completed, we should go down from the actual current gate
+            actual_gate_v = self.back_gate.read_voltage()
+            down = list(np.arange(actual_gate_v, 0, -0.1 * np.sign(gate_v))) + [0]
         self._step_measure(down, time_pr_step)
 
         t_end = time.time() + end_wait
@@ -63,9 +69,13 @@ class LinkamConstantGateVDP(LinkamMeasurementBase):
             self.add_to_current_measurement(data)
         self._read_current_sources()
 
-    def start_constant_gate_one_shot_vdp(
+    def abort_measurement(self):
+        self.aborted = True
+
+    def constant_gate_one_shot_vdp(
             self, comment: str, gate_voltage: float, compliance: float,
-            steps: int, time_pr_step, meas_time: float, end_wait: float
+            steps: int, time_pr_step, meas_time: float, end_wait: float,
+            **kwargs
     ):
         """
         Perform a constant gated one-shot Van der Pauw using a gate and two
@@ -113,7 +123,7 @@ class LinkamConstantGateVDP(LinkamMeasurementBase):
         self.reset_current_measurement(None)
 
     def test(self):
-        self.start_constant_gate_one_shot_vdp(
+        self.constant_gate_one_shot_vdp(
             comment='Python test function',
             gate_voltage=5,
             compliance=1e-5,
