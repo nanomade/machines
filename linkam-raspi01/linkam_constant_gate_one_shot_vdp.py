@@ -9,6 +9,7 @@ from linkam_measurement_base import LinkamMeasurementBase
 class LinkamConstantGateVDP(LinkamMeasurementBase):
     def __init__(self):
         super().__init__()
+        self.allow_abort = True
         # self.source_logger_1.set_range(10)
         # self.source_logger_2.set_range(10)
 
@@ -53,8 +54,12 @@ class LinkamConstantGateVDP(LinkamMeasurementBase):
         if not up_completed:
             # Up was never completed, we should go down from the actual current gate
             actual_gate_v = self.back_gate.read_voltage()
-            down = list(np.arange(actual_gate_v, 0, -0.1 * np.sign(gate_v))) + [0]
+            down = list(np.arange(actual_gate_v, 0,
+                                  -0.1 * np.sign(actual_gate_v))) + [0]
+
+        self.allow_abort = False  # We cannot abort the step down
         self._step_measure(down, time_pr_step)
+        self.allow_abort = True
 
         t_end = time.time() + end_wait
         while time.time() < t_end:
@@ -70,7 +75,8 @@ class LinkamConstantGateVDP(LinkamMeasurementBase):
         self._read_current_sources()
 
     def abort_measurement(self):
-        self.aborted = True
+        if self.allow_abort:
+            self.aborted = True
 
     def constant_gate_one_shot_vdp(
             self, comment: str, gate_voltage: float, compliance: float,
