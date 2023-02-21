@@ -7,8 +7,8 @@ from linkam_measurement_base import LinkamMeasurementBase
 
 
 class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         # self.source_logger_1.set_range(10)
         # self.source_logger_2.set_range(10)
 
@@ -59,7 +59,7 @@ class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
 
     def sweeped_one_shot_vdp(
             self, comment: str, v_low: float, v_high: float, compliance: float,
-            total_steps: int, repeats: int, time_pr_step, end_wait: int, **kwargs
+            steps: int, repeats: int, time_pr_step, end_wait: int, **kwargs
     ):
         """
         Perform a one-shot Van der Pauw using a gate and two LockIn amplifiers
@@ -81,11 +81,11 @@ class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
             'lock_in_v2': {'label': 'LockIn 2', 'frequency': freq2}
         }
         self._add_metadata(labels, meas_type=204, comment=comment)
-        self.reset_current_measurement('one_shot_van_der_pauw')
+        self.reset_current_measurement('sweeped_one_shot_vdp')
 
-        steps = self._calculate_steps(v_low, v_high, total_steps, repeats)
+        actual_steps = self._calculate_steps(v_low, v_high, steps, repeats)
         t = threading.Thread(target=self._gate_sweep,
-                             args=(steps, time_pr_step, end_wait, compliance))
+                             args=(actual_steps, time_pr_step, end_wait, compliance))
         t.start()
         while t.is_alive():
             if self.current_measurement['type'] is None:
@@ -101,7 +101,7 @@ class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
             comment='Test from python code',
             v_low=-3.0,
             v_high=3.0,
-            total_steps=51,
+            steps=51,
             repeats=5,
             time_pr_step=0.1,
             end_wait=10,
