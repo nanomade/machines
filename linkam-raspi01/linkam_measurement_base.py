@@ -29,13 +29,21 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
 
 
 class LinkamMeasurementBase(object):
-    def __init__(self):
+    def __init__(self, init_current_loggers=False):
         self.current_measurement = CURRENT_MEASUREMENT_PROTOTYPE.copy()
         self.lock_in_1 = SR830(interface='gpib', gpib_address=7)
         self.lock_in_2 = SR830(interface='gpib', gpib_address=6)
         self.back_gate = Keithley2400(interface='gpib', gpib_address=22)
+
         self.source_logger_1 = Keithley2000(interface='gpib', gpib_address=14)
         self.source_logger_2 = Keithley2000(interface='gpib', gpib_address=15)
+        if init_current_loggers:
+            self.source_logger_1.read_ac_voltage()
+            self.source_logger_1.scpi_comm(':INITiate:CONTinuous ON')
+            self.source_logger_1.scpi_comm('TRIGGER:SOURCE IMM')
+            self.source_logger_2.read_ac_voltage()
+            self.source_logger_2.scpi_comm(':INITiate:CONTinuous ON')
+            self.source_logger_2.scpi_comm('TRIGGER:SOURCE IMM')
 
         self.chamber_name = "dummy"
         self.aborted = False
@@ -123,8 +131,9 @@ class LinkamMeasurementBase(object):
         return current
 
     def _read_current_sources(self):
-        current_1 = self.source_logger_1.read_ac_voltage() / 1e6
-        current_2 = self.source_logger_2.read_ac_voltage() / 1e6
+        current_1 = self.source_logger_1.next_reading() / 1e6
+        current_2 = self.source_logger_2.next_reading() / 1e6
+
         data = {'current_1': current_1, 'current_2': current_2}
         self.add_to_current_measurement(data)
         return current_1, current_2
