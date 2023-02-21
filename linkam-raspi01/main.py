@@ -13,7 +13,7 @@ class LinkamController(threading.Thread):
         threading.Thread.__init__(self)
         self.quit = False
         # Default to Sweeped One Shot
-        self.measurement = LinkamSweepedOneShotVDP()
+        self.measurement = LinkamSweepedOneShotVDP(init_current_loggers=True)
 
         self.pushsocket = DataPushSocket('Linkam', action='enqueue')
         self.pushsocket.start()
@@ -29,9 +29,9 @@ class LinkamController(threading.Thread):
         if cmd == 'start_measurement':
             print(element.get('measurement'))
             if element.get('measurement') == 'sweeped_one_shot_vdp':
-                self.start_sweeped_one_shot_vdp(**element)
+                self.sweeped_one_shot_vdp(**element)
             elif element.get('measurement') == 'constant_gate_one_shot_vdp':
-                self.start_constant_gate_one_shot_vdp(**element)
+                self.constant_gate_one_shot_vdp(**element)
 
         elif cmd == 'abort':
             self.measurement.abort_measurement()
@@ -42,9 +42,24 @@ class LinkamController(threading.Thread):
         else:
             print('Unknown command')
 
-    def constant_gate_one_shot_vdp(self, **kwargs):
+    def sweeped_one_shot_vdp(self, **kwargs):
         """
         Start the sweeped Van der Pauw measurement
+        Arguments are fed directly from the udp socket, we could consider to do a
+        verification step and report error rather than crash on missing arguments.
+        """
+        # TODO: Check that measurement is not already running
+        self.measurement = LinkamSweepedOneShotVDP()
+        t = threading.Thread(
+            target=self.measurement.sweeped_one_shot_vdp,
+            kwargs=kwargs,
+        )
+        t.start()
+        return True
+
+    def constant_gate_one_shot_vdp(self, **kwargs):
+        """
+        Start the constant gate Van der Pauw measurement
         Arguments are fed directly from the udp socket, we could consider to do a
         verification step and report error rather than crash on missing arguments.
         """
