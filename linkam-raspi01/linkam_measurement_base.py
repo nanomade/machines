@@ -45,7 +45,7 @@ class LinkamMeasurementBase(object):
             self.source_logger_2.scpi_comm(':INITiate:CONTinuous ON')
             self.source_logger_2.scpi_comm('TRIGGER:SOURCE IMM')
 
-        self.chamber_name = "dummy"
+        self.chamber_name = 'linkam'
         self.aborted = False
         self._restart_data_set_saver()
 
