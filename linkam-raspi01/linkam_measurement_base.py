@@ -33,7 +33,7 @@ class LinkamMeasurementBase(object):
         self.current_measurement = CURRENT_MEASUREMENT_PROTOTYPE.copy()
         self.lock_in_1 = SR830(interface='gpib', gpib_address=7)
         self.lock_in_2 = SR830(interface='gpib', gpib_address=6)
-        self.back_gate = Keithley2400(interface='gpib', gpib_address=22)
+        self.back_gate = Keithley2400(interface='gpib', gpib_address=24)
 
         self.source_logger_1 = Keithley2000(interface='gpib', gpib_address=14)
         self.source_logger_2 = Keithley2000(interface='gpib', gpib_address=15)
