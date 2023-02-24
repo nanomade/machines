@@ -157,12 +157,12 @@ class LinkamMeasurementBase(object):
         self.add_to_current_measurement(data)
 
     def _read_vaisala(self):
-        cmd = 'dew_point_linkam#json'.encode()
+        cmd = 'h20_concentration_linkam#json'.encode()
         self.sock.sendto(cmd, ('127.0.0.1', 9001))
         recv = self.sock.recv(65535)
         data = json.loads(recv)
         value = data[1]
-        data = {'dew_point': value}
+        data = {'h20_concentration': value}
         self.add_to_current_measurement(data)
 
     def _prepare_gate(self, compliance):
