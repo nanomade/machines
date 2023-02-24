@@ -34,6 +34,7 @@ class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
         """
         Perform a gate-sweep.
         """
+        self._read_vaisala()
         self._prepare_gate(compliance)
         self._read_current_sources()
         completed = self._step_measure(steps, time_pr_step)
@@ -46,6 +47,7 @@ class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
             self._step_measure(steps, 0.2)
 
         # zig-zag step is done, now perform end_wait
+        self._read_vaisala()
         self._read_current_sources()
         t_end = time.time() + end_wait
         while time.time() < t_end:
@@ -53,6 +55,7 @@ class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
             self._read_gate()
             self._read_lock_ins()
         self._read_current_sources()
+        self._read_vaisala()
 
     def abort_measurement(self):
         self.aborted = True
@@ -72,6 +75,7 @@ class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
         _, _, freq2 = self.lock_in_2.read_r_and_theta()  # ~35ms
         labels = {
             'v_backgate': {'label': 'Gate voltage', 'timestep': time_pr_step},
+            'h20_concentration': 'H2O concentration',
             'i_backgate': 'Gate current',
             'theta_1': 'Theta 1',
             'theta_2': 'Theta 2',
@@ -92,8 +96,8 @@ class LinkamSweepedOneShotVDP(LinkamMeasurementBase):
                 # Measurement has been aborted, skip through the rest of the steps
                 t.stop()
             print('waiting')
+            self._read_vaisala()
             time.sleep(2)
-
         self.reset_current_measurement(None)
 
     def test(self):
