@@ -32,12 +32,15 @@ class LinkamConstantGateVDP(LinkamMeasurementBase):
         up = list(np.arange(0, gate_voltage, step_size)) + [gate_voltage]
         down = list(np.arange(gate_voltage, 0, -1 * step_size)) + [0]
 
+        self._read_vaisala()
         up_completed = self._step_measure(up, time_pr_step)
+        self._read_vaisala()
 
         t_end = time.time() + meas_time
         while time.time() < t_end and not self.aborted:
             time.sleep(time_pr_step)
             self._read_gate()
+            self._read_vaisala()
             v_1, theta_1, _ = self.lock_in_1.read_r_and_theta()
             v_2, theta_2, _ = self.lock_in_2.read_r_and_theta()
             data = {
@@ -60,6 +63,7 @@ class LinkamConstantGateVDP(LinkamMeasurementBase):
         self.allow_abort = False  # We cannot abort the step down
         self._step_measure(down, time_pr_step)
         self.allow_abort = True
+        self._read_vaisala()
 
         t_end = time.time() + end_wait
         while time.time() < t_end:
@@ -72,6 +76,7 @@ class LinkamConstantGateVDP(LinkamMeasurementBase):
                 'theta_1': theta_1, 'theta_2': theta_2,
             }
             self.add_to_current_measurement(data)
+        self._read_vaisala()
         self._read_current_sources()
 
     def abort_measurement(self):
@@ -94,6 +99,7 @@ class LinkamConstantGateVDP(LinkamMeasurementBase):
         _, _, freq2 = self.lock_in_2.read_r_and_theta()  # ~35ms
         labels = {
             'v_backgate': {'label': 'Gate voltage', 'timestep': time_pr_step},
+            'h20_concentration': 'H2O concentration',
             'i_backgate': 'Gate current',
             'theta_1': 'Theta 1',
             'theta_2': 'Theta 2',
