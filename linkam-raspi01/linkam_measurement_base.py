@@ -1,4 +1,6 @@
 import time
+import json
+import socket
 # import logging
 
 import Gpib  # linux-gpib, user space wrapper to kernel driver
@@ -17,6 +19,7 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
     'error': None,
     'start_time': 0,
     'current_time': 0,
+    'dew_point': [],
     'theta_1': [],
     'theta_2': [],
     'current_1': [],
@@ -45,7 +48,12 @@ class LinkamMeasurementBase(object):
             self.source_logger_2.scpi_comm(':INITiate:CONTinuous ON')
             self.source_logger_2.scpi_comm('TRIGGER:SOURCE IMM')
 
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.setblocking(1)
+        self.sock.settimeout(1.0)
+
         self.chamber_name = 'linkam'
+        # self.chamber_name = 'dummy'
         self.aborted = False
         self._restart_data_set_saver()
 
@@ -146,6 +154,15 @@ class LinkamMeasurementBase(object):
             'lock_in_v1': v_1, 'lock_in_v2': v_2,
             'theta_1': theta_1, 'theta_2': theta_2,
         }
+        self.add_to_current_measurement(data)
+
+    def _read_vaisala(self):
+        cmd = 'dew_point_linkam#json'.encode()
+        self.sock.sendto(cmd, ('127.0.0.1', 9001))
+        recv = self.sock.recv(65535)
+        data = json.loads(recv)
+        value = data[1]
+        data = {'dew_point': value}
         self.add_to_current_measurement(data)
 
     def _prepare_gate(self, compliance):
