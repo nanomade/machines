@@ -1,0 +1,15 @@
+<autostart>
+  <name>MKSMFClogger</name> <!-- no spaces -->
+  <session>
+    <startdelay>0.1</startdelay>
+    <command>python socket_server.py</command>
+    <name>daqMX Socket server</name>
+  </session>
+
+  <session>
+    <startdelay>15</startdelay>
+    <command>python datalogger.py</command>
+    <name>MFC Data Logger</name>
+  </session>
+
+</autostart>

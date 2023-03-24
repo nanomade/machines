@@ -1,0 +1,5 @@
+id: linkham optiplex
+purpose: Main computer and MFCs control for Linkham system.
+
+Used daqMX for Linux to control two MFCs. Also serves as main
+computer for Linkham control.
