@@ -22,7 +22,8 @@ class Cryostat4PointDC(CryostatMeasurementBase):
         :steps: Number of steps in the sweep.
         """
         # TODO!!! Take the comment as a parameter
-        labels = {'v_total': 'Vtotal', 'v_sample': 'Vsample', 'current': 'Current'}
+        labels = {'v_total': 'Vtotal', 'v_sample': 'Vsample', 'current': 'Current',
+                  'b_field': 'B-Field', 'sample_temp': 'Sample Temperature'}
         self._add_metadata(labels, 201, 'DC measurement', timestep=0.2)
         self.reset_current_measurement('dc_sweep')
         # todo: If software-timed sweep is not good enough, look into sweeping 6221
