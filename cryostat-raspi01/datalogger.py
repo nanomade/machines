@@ -1,17 +1,18 @@
 import time
 import threading
 
-# from PyExpLabSys.drivers.oxford_mercury_itc import MercuryiTC
 from PyExpLabSys.drivers.oxford_mercury import OxfordMercury
 
-from PyExpLabSys.common.value_logger import ValueLogger
+from PyExpLabSys.common.sockets import DataPushSocket
 from PyExpLabSys.common.sockets import DateDataPullSocket
+
+from PyExpLabSys.common.value_logger import ValueLogger
 from PyExpLabSys.common.database_saver import ContinuousDataSaver
 
 import credentials
 
 
-class MercuryiTCReader(threading.Thread):
+class MercuryComm(threading.Thread):
     """ Read values from the mercury controlle """
     def __init__(self):
         threading.Thread.__init__(self)
@@ -35,6 +36,9 @@ class MercuryiTCReader(threading.Thread):
             port=9000
         )
         self.pullsocket.start()
+        self.pushsocket = DataPushSocket('Mercury Control', action='enqueue')
+        self.pushsocket.start()
+
         self.quit = False
         self.ttl = 50
 
@@ -51,7 +55,6 @@ class MercuryiTCReader(threading.Thread):
                 break
         return mercury
 
-    
     def value(self, codename):
         """ Read Mercury readings """
         self.ttl = self.ttl - 1
@@ -62,27 +65,34 @@ class MercuryiTCReader(threading.Thread):
         return_val = self.values[codename]
         return return_val
 
+    def _update_values(self):
+        magnet_info = self.mercury_ips.read_magnet_details('PSU.M1')
+        self.values['cryostat_magnet_voltage'] = magnet_info['voltage'][0]
+        self.values['cryostat_magnet_current'] = magnet_info['current'][0]
+        self.values['cryostat_magnetic_field'] = magnet_info['field'][0]
+
+        self.values['cryostat_vti_pressure'] = self.mercury_itc.read_pressure('DB8.P1')[0]
+        self.values['cryostat_vti_temperature'] = self.mercury_itc.read_temperature('DB6.T1')[0]
+        self.values['cryostat_magnet_temperature'] = self.mercury_itc.read_temperature('DB7.T1')[0]
+        self.values['cryostat_sample_temperature'] = self.mercury_itc.read_temperature('MB1.T1')[0]
+        for key, value in self.values.items():
+            self.pullsocket.set_point_now(key, value)
+
     def run(self):
         while not self.quit:
             self.ttl = 100
-            time.sleep(0.55)
-            magnet_info = self.mercury_ips.read_magnet_details('PSU.M1')
-            self.values['cryostat_magnet_voltage'] = magnet_info['voltage'][0]
-            self.values['cryostat_magnet_current'] = magnet_info['current'][0]
-            self.values['cryostat_magnetic_field'] = magnet_info['field'][0]
-
-            self.values['cryostat_vti_pressure'] = self.mercury_itc.read_pressure('DB8.P1')[0]
-            self.values['cryostat_vti_temperature'] = self.mercury_itc.read_temperature('DB6.T1')[0]
-            self.values['cryostat_magnet_temperature'] = self.mercury_itc.read_temperature('DB7.T1')[0]
-            self.values['cryostat_sample_temperature'] = self.mercury_itc.read_temperature('MB1.T1')[0]
-            for key, value in self.values.items():          
-                self.pullsocket.set_point_now(key, value)
+            time.sleep(0.5)
+            qsize = self.pushsocket.queue.qsize()
+            while qsize > 0:
+                element = self.pushsocket.queue.get()
+                print(element)
+            self._update_values()
 
 
 class Logger(object):
     def __init__(self):
         self.loggers = {}
-        self.reader = MercuryiTCReader()
+        self.reader = MercuryComm()
         self.reader.start()
 
         # codenames = {'cryostat_vti_pressure': 0.1, 'cryostat_vti_temperature': 1}
