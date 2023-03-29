@@ -16,8 +16,12 @@ class Cryostat4PointAC(CryostatACBase):
         :param stop: The highest current in the sweep.
         :steps: Number of steps in the sweep.
         """
-        labels = {'v_total': 'Vtotal', 'v_sample': 'Vsample',
-                  'current': 'Current', 'theta': 'Theta'}
+        labels = {
+            'v_total': 'Vtotal', 'v_sample': 'Vsample', 'current': 'Current',
+            'theta': 'Theta', 'b_field': 'B-Field',
+            'sample_temp': 'Sample Temperature', 'vti_temp': 'VTI Temperature'
+        }
+
         self._add_metadata(labels, 202, 'AC measurement',
                            freq=self.lock_in_frequency)
 
@@ -39,7 +43,8 @@ class Cryostat4PointAC(CryostatACBase):
                 t.stop()
 
             print('waiting')
-            time.sleep(1)
+            self._read_cryostat()
+            time.sleep(2)
         # TODO!! Handle the case of non-succes!
         # if self.current_measurement['error']:
 
@@ -49,8 +54,8 @@ class Cryostat4PointAC(CryostatACBase):
 
     def test(self):
         # self.instrument_id()
-        self.set_lock_in_frequency(12523.2)
-        self.ac_4_point_measurement(1.0e-7, 5.0e-6, 100)
+        self.set_lock_in_frequency(2523.2)
+        self.ac_4_point_measurement(3.0e-7, 1.0e-4, 100)
 
 
 if __name__ == '__main__':
