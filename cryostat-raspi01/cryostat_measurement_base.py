@@ -1,4 +1,6 @@
+import json
 import time
+import socket
 # import logging
 import threading
 
@@ -22,7 +24,10 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
     'v_sample': [],
     'theta': [],
     'v_backgate': [],  # Back gate voltage
-    'i_backgate': []  # Bakc gate leak-current
+    'i_backgate': [],  # Bakc gate leak-current
+    'b_field': [],
+    'vti_temp': [],
+    'sample_temp': [],
 }
 
 
@@ -36,7 +41,12 @@ class CryostatMeasurementBase(object):
         self.nanov1 = None  # Used for DC measurements
         self.lock_in = None  # Used for AC measurements
         self.current_source = Keithley6220(interface='gpib', gpib_address=12)
+        # self.current_source = Keithley6220(interface='serial', device='/dev/ttyUSB0')
         self.dmm = Keithley2000(interface='gpib', gpib_address=16)
+
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.setblocking(1)
+        self.sock.settimeout(1.0)
 
         self.chamber_name = "dummy"
 
@@ -117,6 +127,24 @@ class CryostatMeasurementBase(object):
                 continue
             reply = device.read()
             print('{}: {}'.format(i, reply))
+
+    def _read_socket(self, cmd):
+        self.sock.sendto(cmd.encode(), ('127.0.0.1', 9000))
+        recv = self.sock.recv(65535)
+        data = json.loads(recv)
+        value = data[1]
+        return value
+
+    def _read_cryostat(self):
+        field = self._read_socket('cryostat_magnetic_field#json')
+        vti_temp = self._read_socket('cryostat_vti_temperature#json')
+        sample_temp = self._read_socket('cryostat_sample_temperature#json')
+        data = {
+            'b_field': field,
+            'vti_temp': vti_temp,
+            'sample_temp': sample_temp,
+        }
+        self.add_to_current_measurement(data)
 
     def instrument_id(self):
         found_all = self._identify_all_instruments()
