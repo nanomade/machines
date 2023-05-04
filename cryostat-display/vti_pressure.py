@@ -16,7 +16,7 @@ class CryostatReader(threading.Thread):
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setblocking(1)
-
+        self.sock.settimeout(1)
         self.values = {
             'cryostat_vti_pressure': (-1, -1),
             'cryostat_vti_temperature': (-1, -1),
@@ -26,12 +26,16 @@ class CryostatReader(threading.Thread):
         while self.running:
             time.sleep(1.0)
             for codename in self.values.keys():
-                cmd = '{}#json'.format(codename).encode()
-                self.sock.sendto(cmd, (SERVER_IP, 9000))
-                recv = self.sock.recv(65535)
-                data = json.loads(recv)
-                self.values[codename] = (time.time(), data[1])
-
+                try:
+                    cmd = '{}#json'.format(codename).encode()
+                    self.sock.sendto(cmd, (SERVER_IP, 9000))
+                    print('klaf', codename, time.time())
+                    recv = self.sock.recv(65535)
+                    data = json.loads(recv)
+                    self.values[codename] = (time.time(), data[1])
+                except socket.timeout:
+                    print('Timeout')
+                    time.sleep(1)
 
 def main():
     cr = CryostatReader()
@@ -66,9 +70,12 @@ def main():
             continue
 
         for key, value in cr.values.items():
-            if time.time() - value[0] < 3:
-                value_str = '{:.3f}'.format(value[1])
-            else:
+            try:
+                if time.time() - value[0] < 3:
+                    value_str = '{:.3f}'.format(value[1])
+                else:
+                    value_str = '-'
+            except ValueError:
                 value_str = '-'
 
             try:
