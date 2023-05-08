@@ -27,7 +27,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.read_socket_in_use = False
 
         self.t_start = time.time()
-        uic.loadUi('cryostat_frontend_tab_test.ui', self)
+        uic.loadUi('cryostat_frontend.ui', self)
 
         self.vti_temp_setpoint.valueChanged.connect(self._update_vti_temp)
         self.sample_temp_setpoint.valueChanged.connect(self._update_sample_temp)
