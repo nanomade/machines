@@ -22,6 +22,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.write_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.write_socket.setblocking(0)
 
+        # Used for continous communication with cryostat
         self.read_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.read_socket.setblocking(0)
         self.read_socket_in_use = False
@@ -36,8 +37,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.activate_ramp_button.clicked.connect(self._activate_ramp)
         self.stop_ramp_button.clicked.connect(self._stop_ramp)
 
+        self.start_4point_delta_button.clicked.connect(self._start_4point_delta)
+        self.abort_measurement_button.clicked.connect(self._abort_measurement)
+
         self.temperature_plot.setBackground('w')
         self.b_field_plot.setBackground('w')
+        self.status_plot.setBackground('w')
 
         self.vti_temp_x = []
         self.vti_temp_y = []
@@ -69,6 +74,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.timer.timeout.connect(self.update_plot_data)
         self.timer.start()
 
+    def alert(self, msg):
+        box = QMessageBox()
+        box.setIcon(QMessageBox.Critical)
+        box.setText(msg)
+        box.setWindowTitle(msg)
+        box.exec_()
+        
     def _read_field(self, x, y):
         """
         Read a specific field in the ramp table.
@@ -83,11 +95,12 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             value = float(item.text())
         except ValueError:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Critical)
-            msg.setText("Error")
-            msg.setWindowTitle("Error")
-            msg.exec_()
+            self.alert('Value error in ramp')
+            # msg = QMessageBox()
+            # msg.setIcon(QMessageBox.Critical)
+            # msg.setText('Value error in ramp')
+            # msg.setWindowTitle("Error")
+            # msg.exec_()
             value = None
             raise InvalidFieldError
         return value
@@ -119,9 +132,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ramp_start = 0
         self.ramp = None
 
-    def _write_socket(self, cmd):
+    def _write_socket(self, cmd, port=8500):
         socket_cmd = 'json_wn#' + json.dumps(cmd)
-        self.read_socket.sendto(socket_cmd.encode(), ('10.54.4.78', 8500))
+        self.read_socket.sendto(socket_cmd.encode(), ('10.54.4.78', port))
         time.sleep(0.1)
         recv = self.read_socket.recv(65535).decode('ascii')
         print(recv)
@@ -136,6 +149,31 @@ class MainWindow(QtWidgets.QMainWindow):
         self._write_socket(command)
         # todo: Check reply that command is acknowledged
 
+    def _abort_measurement(self):
+        command = {
+            'cmd': 'abort',
+        }
+        self._write_socket(command, 8510)
+
+    def _start_4point_delta(self):
+        comment = self.measurement_comment.text()
+        current = self.delta_4_point_current.value()
+        measure_time = self.delta_4_point_measure_time.value()
+        if len(comment) < 5:
+            self.alert('Comment too short')
+            return False
+
+        command = {
+            'cmd': 'start_measurement',
+            'measurement': 'delta_constant_current',
+            'comment': comment,
+            'current': current,
+            'measure_time': measure_time
+        }
+        print(command)
+        # self._write_socket(command, 8510)
+        
+        
     def _update_vti_temp(self):
         setpoint = self.vti_temp_setpoint.value()
         self._update_via_socket('vti_temperature_setpoint', setpoint)
@@ -148,11 +186,11 @@ class MainWindow(QtWidgets.QMainWindow):
         setpoint = self.sample_temp_setpoint.value()
         self._update_via_socket('sample_temperature_setpoint', setpoint)
 
-    def _read_socket(self, cmd):
+    def _read_socket(self, cmd, port=9000):
         self.read_socket_in_use = True
         try:
             socket_cmd = cmd + '#json'
-            self.read_socket.sendto(socket_cmd.encode(), ('10.54.4.78', 9000))
+            self.read_socket.sendto(socket_cmd.encode(), ('10.54.4.78', port))
             time.sleep(0.01)
             recv = self.read_socket.recv(65535).decode('ascii')
             data = json.loads(recv)
@@ -208,6 +246,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.b_field_x.append(time.time() - self.t_start)
             self.b_field_y.append(b_field)
+
+            # Read status of ongoing measurement
+            status = self._read_socket('status', 9002)
+            print('status', status, type(status))
+            measurement_type = status['type']
+            print(measurement_type)
 
         self.vti_temp_line.setData(self.vti_temp_x, self.vti_temp_y)
         self.sample_temp_line.setData(self.sample_temp_x, self.sample_temp_y)
