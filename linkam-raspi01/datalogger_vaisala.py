@@ -4,6 +4,7 @@ import threading
 from PyExpLabSys.drivers.vaisala_dmt143 import VaisalaDMT143
 
 from PyExpLabSys.common.value_logger import ValueLogger
+from PyExpLabSys.common.sockets import LiveSocket
 from PyExpLabSys.common.sockets import DateDataPullSocket
 from PyExpLabSys.common.database_saver import ContinuousDataSaver
 
@@ -27,6 +28,8 @@ class VaisalaReader(threading.Thread):
             port=9001
         )
         self.pullsocket.start()
+        self.livesocket = LiveSocket('VaisalaLiveDewPoint', list(self.values.keys()))
+        self.livesocket.start()
         self.quit = False
         self.ttl = 50
 
@@ -37,6 +40,9 @@ class VaisalaReader(threading.Thread):
             self.sensor = VaisalaDMT143(port='/dev/serial/by-id/' + port)
             time.sleep(1)
         except OSError:
+            print('Could not find sensor, sleep for 5 seconds')
+            time.sleep(5)
+        except UnicodeDecodeError:
             print('Could not find sensor, sleep for 5 seconds')
             time.sleep(5)
 
@@ -63,12 +69,17 @@ class VaisalaReader(threading.Thread):
         while not self.quit:
             self.ttl = 100
             time.sleep(0.25)
-            values = self.sensor.water_level()
+            try:
+                values = self.sensor.water_level()
+            except ValueError:
+                values = None
             if values is None:
                 values = {'dew_point': -100, 'vol_conc': -100}
                 self._connect_to_sensor()
             self.pullsocket.set_point_now('dew_point_linkam', values['dew_point'])
             self.pullsocket.set_point_now('h20_concentration_linkam', values['vol_conc'])
+            self.livesocket.set_point_now('dew_point_linkam', values['dew_point'])
+            self.livesocket.set_point_now('h20_concentration_linkam', values['vol_conc'])
             self.values = {
                 'dew_point_linkam': values['dew_point'],
                 'h20_concentration_linkam': values['vol_conc']
