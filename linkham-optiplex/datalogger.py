@@ -4,6 +4,7 @@ import time
 import socket
 import threading
 import credentials
+from PyExpLabSys.common.sockets import LiveSocket
 from PyExpLabSys.common.value_logger import ValueLogger
 from PyExpLabSys.common.database_saver import ContinuousDataSaver
 
@@ -15,6 +16,8 @@ class NetworkReader(threading.Thread):
         self.name = 'NetworkReader Thread'
         self.values = {}
         self.codenames = codenames
+        self.livesocket = LiveSocket('LinkamLiveFlowLogger', list(codenames))
+        self.livesocket.start()
         for codename in codenames:
             self.values[codename] = None
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -44,6 +47,7 @@ class NetworkReader(threading.Thread):
                 recv = self.sock.recv(65535)
                 data = json.loads(recv)
                 self.values[codename] = data[1]
+                self.livesocket.set_point_now(codename, data[1])
 
 
 class NetworkLogger(object):
