@@ -17,9 +17,8 @@ class MercuryComm(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.name = 'MercuryReader Thread'
-        # lf.mercury_itc = OxfordMercury('/dev/ttyACM0')
-        self.mercury_itc = self._find_device('ITC')
-        self.mercury_ips = self._find_device('IPS')
+        self.mercury_itc = OxfordMercury(hostname='192.168.0.20')
+        self.mercury_ips = OxfordMercury(hostname='192.168.0.21')
         self.values = {
             'cryostat_magnet_voltage': -1,
             'cryostat_magnet_current': -1,
@@ -68,8 +67,8 @@ class MercuryComm(threading.Thread):
     def _update_values(self):
         magnet_info = self.mercury_ips.read_magnet_details('PSU.M1')
         self.values['cryostat_magnet_voltage'] = magnet_info['voltage'][0]
-        self.values['cryostat_magnet_current'] = magnet_info['current'][0]
-        self.values['cryostat_magnetic_field'] = magnet_info['field'][0]
+        self.values['cryostat_magnet_current'] = magnet_info['current'][0] * 2
+        self.values['cryostat_magnetic_field'] = self.mercury_ips.read_magnetic_field('GRPZ')[0]
 
         self.values['cryostat_vti_pressure'] = self.mercury_itc.read_pressure('DB8.P1')[0]
         self.values['cryostat_vti_temperature'] = self.mercury_itc.read_temperature('DB6.T1')[0]
@@ -78,6 +77,21 @@ class MercuryComm(threading.Thread):
         for key, value in self.values.items():
             self.pullsocket.set_point_now(key, value)
 
+    def _handle_element(self, element):
+        print(element)
+        cmd = element['cmd']
+        if cmd == 'sample_temperature_setpoint':
+            setpoint = element.get('setpoint')
+            self.mercury_itc.temperature_setpoint('MB1.T1', setpoint)
+
+        if cmd == 'vti_temperature_setpoint':
+            setpoint = element.get('setpoint')
+            self.mercury_itc.temperature_setpoint('DB6.T1', setpoint)
+
+        if cmd == 'b_field_setpoint':
+            setpoint = element.get('setpoint')
+            print(self.mercury_ips.b_field_setpoint('GRPZ', setpoint))
+
     def run(self):
         while not self.quit:
             self.ttl = 100
@@ -85,7 +99,8 @@ class MercuryComm(threading.Thread):
             qsize = self.pushsocket.queue.qsize()
             while qsize > 0:
                 element = self.pushsocket.queue.get()
-                print(element)
+                self._handle_element(element)
+                qsize = self.pushsocket.queue.qsize()
             self._update_values()
 
 
@@ -97,10 +112,10 @@ class Logger(object):
 
         # codenames = {'cryostat_vti_pressure': 0.1, 'cryostat_vti_temperature': 1}
         codenames = {
-            'cryostat_vti_pressure': 0.1, 'cryostat_vti_temperature': 0.2,
+            'cryostat_vti_pressure': 0.1, 'cryostat_vti_temperature': 0.5,
             'cryostat_magnet_temperature': 0.2, 'cryostat_sample_temperature': 0.2,
-            'cryostat_magnet_voltage': 0.05, 'cryostat_magnet_current': 0.5,
-            'cryostat_magnetic_field': 0.05
+            'cryostat_magnet_voltage': 0.05, 'cryostat_magnet_current': 0.1,
+            'cryostat_magnetic_field': 0.005
         }
         self.db_logger = ContinuousDataSaver(
             continuous_data_table='dateplots_cryostat',
@@ -126,7 +141,7 @@ class Logger(object):
         """
         Main function
         """
-        time.sleep(20)
+        time.sleep(5)
         while self.reader.is_alive():
             time.sleep(5)
             for name in self.loggers.keys():
