@@ -2,7 +2,7 @@ import time
 import threading
 
 from PyExpLabSys.drivers.oxford_mercury import OxfordMercury
-
+from PyExpLabSys.common.sockets import LiveSocket
 from PyExpLabSys.common.sockets import DataPushSocket
 from PyExpLabSys.common.sockets import DateDataPullSocket
 
@@ -37,6 +37,8 @@ class MercuryComm(threading.Thread):
         self.pullsocket.start()
         self.pushsocket = DataPushSocket('Mercury Control', action='enqueue')
         self.pushsocket.start()
+        self.livesocket = LiveSocket('CryostatCoreLive',  list(self.values.keys()))
+        self.livesocket.start()
 
         self.quit = False
         self.ttl = 50
@@ -76,6 +78,7 @@ class MercuryComm(threading.Thread):
         self.values['cryostat_sample_temperature'] = self.mercury_itc.read_temperature('MB1.T1')[0]
         for key, value in self.values.items():
             self.pullsocket.set_point_now(key, value)
+            self.livesocket.set_point_now(key, value)
 
     def _handle_element(self, element):
         print(element)
