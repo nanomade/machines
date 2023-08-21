@@ -1,13 +1,16 @@
 """ Flow control for analog MFCs"""
+import json
 import time
+import socket
 import threading
 
 import nidaqmx
 from nidaqmx.constants import TerminalConfiguration
 
-from PyExpLabSys.common.sockets import DateDataPullSocket
+import PyExpLabSys.auxiliary.pid as PID
+from PyExpLabSys.common.sockets import LiveSocket
 from PyExpLabSys.common.sockets import DataPushSocket
-# from PyExpLabSys.common.sockets import LiveSocket
+from PyExpLabSys.common.sockets import DateDataPullSocket
 
 
 class FlowControl(threading.Thread):
@@ -32,6 +35,9 @@ class FlowControl(threading.Thread):
             port=9000
         )
         self.pullsocket.start()
+        self.livesocket = LiveSocket('MFC_Flow_Linkam', socket_names,
+                                     no_internal_data_pull_socket=True)
+        self.livesocket.start()
 
         for device in devices.keys():
             self.set_flow(device, 0)
@@ -39,11 +45,38 @@ class FlowControl(threading.Thread):
         self.pushsocket = DataPushSocket(name, action='enqueue')
         self.pushsocket.start()
 
-        # self.livesocket = LiveSocket('linkham_mfc_flows', devices)
-        # self.livesocket.start()
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.setblocking(0)
+
+        self.pid = PID.PID(pid_p=5e-4, pid_i=4e-6, p_min=-0.5, p_max=5)
+        self.pid_setpoint = None
         self.running = True
 
-    def read_all_flows(self):
+    def _read_h20_conc(self):
+        cmd = 'h20_concentration_linkam#json'
+        error = 0
+        while -1 < error < 50:
+            try:
+                self.socket.sendto(cmd.encode(), ('10.54.4.56', 9001))
+                time.sleep(0.01)
+                recv = self.socket.recv(65535)
+                error = -1
+            except BlockingIOError:
+                time.sleep(0.2)
+                error += 1
+                if error > 3:
+                    print('Comm error, cannont read humidity')
+        if error > -1:
+            return -1
+        try:
+            data = json.loads(recv)
+            value = data[1]
+            concentration = float(value)
+        except ValueError:
+            concentration = -1
+        return concentration
+
+    def _read_all_flows(self):
         with nidaqmx.Task() as task:
             # Add all channels to task
             for mfc_info in self.devices.values():
@@ -63,9 +96,9 @@ class FlowControl(threading.Thread):
             flow = flow_raw * flow_range / 5.0
 
             name = 'mfc_flow_{}_linkham'.format(device)
-            print(name + ': ' + str(flow))
+            # print(name + ': ' + str(flow))
             self.pullsocket.set_point_now(name, flow)
-            # self.livesocket.set_point_now(mfc, flow)
+            self.livesocket.set_point_now(name, flow)
 
     def set_flow(self, device, value):
         # Actual update of analog out
@@ -80,25 +113,51 @@ class FlowControl(threading.Thread):
 
         # Update of setpoint book-keeping
         name = 'mfc_flow_{}_setpoint_linkham'.format(device)
-        self.pullsocket.set_point_now(name, 0)
+        self.pullsocket.set_point_now(name, value)
+        self.livesocket.set_point_now(name, value)
         return True
+
+    def _calculate_wanted_flow(self):
+        # Dry flow is set staticly, regulation is done via wet flow
+        dry_flow = 10 + (100 - self.pid_setpoint / 100)
+        if dry_flow > 100:
+            dry_flow = 100
+        elif dry_flow < 10:
+            dry_flow = 10
+        self.set_flow(device='dry', value=dry_flow)
+
+        h20_conc = self._read_h20_conc()
+        wanted_flow = self.pid.wanted_power(h20_conc) + 0.5
+        p = self.pid.proportional_contribution()
+        i = self.pid.integration_contribution()
+        print('P: {:.2f}. I: {:.2f}. Tot: {:.2f}'.format(p, i, wanted_flow - 0.5))
+        self.set_flow(device='wet', value=wanted_flow)
+        return wanted_flow
 
     def run(self):
         while self.running:
             time.sleep(0.25)
+            if self.pid_setpoint:
+                self._calculate_wanted_flow()
+
             qsize = self.pushsocket.queue.qsize()
             while qsize > 0:
                 element = self.pushsocket.queue.get()
-                # cmd is not currently actually used - could be used for
-                # fancier stuff, like asking for a ramp or similar
-                # cmd = element['cmd']
-                device = element['device']
-                flow = element['value']
-                print('Queue: ' + str(qsize))
-                self.set_flow(device=device, value=flow)
+
+                cmd = element['cmd']
+                if cmd == 'set_flow':
+                    # If a flow is set manually, the PID is turned off
+                    device = element['device']
+                    flow = element['value']
+                    self.pid_setpoint = None
+                    self.set_flow(device=device, value=flow)
+                elif cmd == 'set_pid_setpoint':
+                    setpoint = element['value']
+                    self.pid_setpoint = setpoint
+                    self.pid.update_setpoint(setpoint)
                 qsize = self.pushsocket.queue.qsize()
-            print('')
-            self.read_all_flows()
+                print('Queue: ' + str(qsize))
+            self._read_all_flows()
 
 
 def main():
