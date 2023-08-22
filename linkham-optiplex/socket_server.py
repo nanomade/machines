@@ -119,7 +119,7 @@ class FlowControl(threading.Thread):
 
     def _calculate_wanted_flow(self):
         # Dry flow is set staticly, regulation is done via wet flow
-        dry_flow = 10 + (100 - self.pid_setpoint / 100)
+        dry_flow = 10 + (100 - self.pid_setpoint / 50)
         if dry_flow > 100:
             dry_flow = 100
         elif dry_flow < 10:
