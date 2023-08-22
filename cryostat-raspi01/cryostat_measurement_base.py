@@ -22,6 +22,7 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
     'current': [],
     'v_total': [],
     'v_sample': [],
+    'dv_di': [],
     'theta': [],
     'v_backgate': [],  # Back gate voltage
     'i_backgate': [],  # Bakc gate leak-current
@@ -34,21 +35,18 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
 class CryostatMeasurementBase(object):
     def __init__(self):
         self.current_measurement = CURRENT_MEASUREMENT_PROTOTYPE.copy()
-        # self.lock_in = SR830(interface='gpib', gpib_address=8)
-        # self.nanov1 = Keithley2182(interface='gpib', gpib_address=7)
-        # self.back_gate = Keithley2400(interface='gpib', gpib_address=22)
         self.back_gate = None  # Used for gated measurements
         self.nanov1 = None  # Used for DC measurements
         self.lock_in = None  # Used for AC measurements
-        self.current_source = Keithley6220(interface='gpib', gpib_address=12)
-        # self.current_source = Keithley6220(interface='serial', device='/dev/ttyUSB0')
+        self.current_source = Keithley6220(interface='lan', hostname='192.168.0.3')
         self.dmm = Keithley2000(interface='gpib', gpib_address=16)
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setblocking(1)
         self.sock.settimeout(1.0)
 
-        self.chamber_name = "dummy"
+        self.chamber_name = 'cryostat'
+        # self.chamber_name = 'dummy'
 
         self.lock_in_frequency = None
         # self.set_lock_in_frequency(1010)  # Only on the AC measurements
@@ -129,10 +127,14 @@ class CryostatMeasurementBase(object):
             print('{}: {}'.format(i, reply))
 
     def _read_socket(self, cmd):
-        self.sock.sendto(cmd.encode(), ('127.0.0.1', 9000))
-        recv = self.sock.recv(65535)
-        data = json.loads(recv)
-        value = data[1]
+        try:
+            self.sock.sendto(cmd.encode(), ('127.0.0.1', 9000))
+            recv = self.sock.recv(65535)
+            data = json.loads(recv)
+            value = data[1]
+        except socket.timeout:
+            print('Lost access to socket')
+            value = None
         return value
 
     def _read_cryostat(self):
@@ -144,7 +146,8 @@ class CryostatMeasurementBase(object):
             'vti_temp': vti_temp,
             'sample_temp': sample_temp,
         }
-        self.add_to_current_measurement(data)
+        if not None in data.values():
+            self.add_to_current_measurement(data)
 
     def instrument_id(self):
         found_all = self._identify_all_instruments()
@@ -163,7 +166,7 @@ class CryostatMeasurementBase(object):
         """
         if measurement_type is None:
             self.current_measurement['type'] = None
-            self.current_measurement['type'] = error
+            self.current_measurement['error'] = error
         else:
             for key, value in self.current_measurement.items():
                 if isinstance(value, list):
@@ -190,14 +193,18 @@ class CryostatMeasurementBase(object):
                 self.data_set_saver.save_point(key, (now, value))
         self.current_measurement['current_time'] = time.time()
 
-    def _add_metadata(self, labels, meas_type, comment, timestep=None, freq=None):
+    def _add_metadata(self,
+                      labels, meas_type, comment, timestep=None,
+                      freq=None, current=None, delta_i=None):
         metadata = {
             'Time': CustomColumn(time.time(), "FROM_UNIXTIME(%s)"),
             'label': None,
             'type': meas_type,
+            'current': current,
             'comment': comment,
             'timestep': timestep,
-            'frequency': freq
+            'frequency': freq,
+            'delta_i': delta_i,
         }
         for key, value in labels.items():
             metadata.update({'label': value})
