@@ -24,7 +24,7 @@ class CryostatController(threading.Thread):
         self.pushsocket.start()
 
         self.pullsocket = DateDataPullSocket(
-            'cryostat', ['status', 'v_sample'], timeouts=[999999, 3], port=9002
+            'cryostat', ['status', 'v_xx'], timeouts=[999999, 3], port=9002
         )
         self.pullsocket.start()
 
@@ -124,10 +124,10 @@ class CryostatController(threading.Thread):
             status = {'type': None, 'start_time': None}
                 
             if self.measurement is not None:
-                if len(self.measurement.current_measurement['v_sample']) > 2:
+                if len(self.measurement.current_measurement['v_xx']) > 2:
                     self.pullsocket.set_point_now(
                         'v_sample',
-                        self.measurement.current_measurement['v_sample'][-1]
+                        self.measurement.current_measurement['v_xx'][-1]
                     )
 
                 status = {
