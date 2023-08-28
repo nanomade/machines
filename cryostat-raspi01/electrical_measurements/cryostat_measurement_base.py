@@ -21,7 +21,9 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
     'current_time': 0,
     'current': [],
     'v_total': [],
-    'v_sample': [],
+    # 'v_sample': [],
+    'v_xx': [],
+    'v_xy': [],
     'dv_di': [],
     'theta': [],
     'v_backgate': [],  # Back gate voltage
@@ -45,8 +47,8 @@ class CryostatMeasurementBase(object):
         self.sock.setblocking(1)
         self.sock.settimeout(1.0)
 
-        self.chamber_name = 'cryostat'
-        # self.chamber_name = 'dummy'
+        # self.chamber_name = 'cryostat'
+        self.chamber_name = 'dummy'
 
         self.lock_in_frequency = None
         # self.set_lock_in_frequency(1010)  # Only on the AC measurements
@@ -224,7 +226,8 @@ class CryostatMeasurementBase(object):
         if not source_ok:
             print('ABORT DUE TO COMPLIENCE')
             self.reset_current_measurement(None, error=True)
-            self.current_source.stop_and_unarm()
+            self.current_source.stop_and_unarm_sweep()  # TODO - execute only the relevant stop function
+            self.current_source.stop_and_unarm_wave()
             self.current_source.set_current(0)
             self.current_source.output_state(False)
             print(self.current_source.latest_error)
