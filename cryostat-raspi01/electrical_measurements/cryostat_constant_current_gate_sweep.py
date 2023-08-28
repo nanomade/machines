@@ -46,6 +46,30 @@ class CryostatConstantCurrentGateSweep(CryostatMeasurementBase):
         step_list = up + zigzag + down + [0]
         return step_list
 
+    def _read_voltages(self):
+        # Prepare to listen for triggers
+        t_vxx = threading.Thread(
+            target=self.masure_voltage_xx.start_measurement
+        )
+        t_vxx.start()
+        t_vxy = threading.Thread(
+            target=self.masure_voltage_xy.start_measurement
+        )
+        t_vxy.start()
+        t_vtotal = threading.Thread(
+            target=self.masure_voltage_total.start_measurement
+        )
+        t_vtotal.start()
+
+        # This will both read the gate and trigger the 2182a's
+        self._read_gate()
+
+        # Read the measured result
+        v_xx = self.masure_voltage_xx.read_voltage()
+        v_xy = self.masure_voltage_xy.read_voltage()
+        v_total = self.masure_voltage_total.read_voltage()
+        return v_xx, v_xy, v_total
+
     def abort_measurement(self):
         print('ABORT')
         self.reset_current_measurement(None, error='Aborted')
@@ -109,24 +133,9 @@ class CryostatConstantCurrentGateSweep(CryostatMeasurementBase):
                 continue
 
             self.back_gate.set_voltage(gate_v)
-            t_vxx = threading.Thread(
-                target=self.masure_voltage_xx.start_measurement
-            )
-            t_vxx.start()
-            t_vxy = threading.Thread(
-                target=self.masure_voltage_xy.start_measurement
-            )
-            t_vxy.start()
-            t_vtotal = threading.Thread(
-                target=self.masure_voltage_total.start_measurement
-            )
-            t_vtotal.start()
-            # This will both read the gate and trigger the 2182a's
-            self._read_gate()
-            v_xx = self.masure_voltage_xx.read_voltage()
-            v_xy = self.masure_voltage_xy.read_voltage()
-            print(v_xx, v_xy)
-            v_total = self.masure_voltage_total.read_voltage()
+            # Source measure dealy:
+            time.sleep(0.001)  # TODO: Make the delay configurable
+            v_xx, v_xy, v_total = self._read_voltages()
 
             data = {'v_total': v_total, 'v_xx': v_xx, 'v_xy': v_xy}
             if v_xx < -1000:
