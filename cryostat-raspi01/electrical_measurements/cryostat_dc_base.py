@@ -30,6 +30,15 @@ class CryostatDCBase(CryostatMeasurementBase):
         self.masure_voltage_xy = MeasureVxy(self.xy_nanov)
         self.masure_voltage_total = MeasureVTotal(self.dmm)
 
+    def _configure_back_gate(self):
+        """
+        Confgire the 2400 for gating
+        """
+        self.back_gate.set_source_function('v')
+        self.back_gate.set_current_limit(1e-4)
+        self.back_gate.set_voltage(0)
+        self.back_gate.output_state(True)
+
     def _configure_dmm(self, v_limit):
         """
         Configure  Model 2000 used for 2-point measurement
@@ -51,7 +60,19 @@ class CryostatDCBase(CryostatMeasurementBase):
         self.current_source.set_current(0)
         self.current_source.output_state(True)
 
-    def _read_voltages(self, nplc):
+    def _configure_nano_voltmeters(self, nplc):
+        """
+        Confgire the 2182a's for voltage measurement
+        todo: Setup for external triggering (now done via frontpanel)
+        todo: accept other range than auto-range
+        """
+        self.current_source._2182a_comm(':SENSE:VOLT:CHANNEL1:RANGE:AUTO ON')
+        self.xy_nanov.set_range(0, 0)
+        self.current_source._2182a_comm('SENSE:VOLTAGE:NPLCYCLES ' + str(nplc))
+        self.xy_nanov.set_integration_time(nplc)
+        self.current_source._2182a_comm()
+
+    def _read_voltages(self, nplc, store_gate=True):
         # Prepare to listen for triggers
         t_vxx = threading.Thread(
             target=self.masure_voltage_xx.start_measurement,
@@ -70,7 +91,7 @@ class CryostatDCBase(CryostatMeasurementBase):
         t_vtotal.start()
 
         # This will both read the gate and trigger the 2182a's
-        self._read_gate()
+        self._read_gate(store_data=store_gate)
 
         # Read the measured result
         v_xx = self.masure_voltage_xx.read_voltage()
