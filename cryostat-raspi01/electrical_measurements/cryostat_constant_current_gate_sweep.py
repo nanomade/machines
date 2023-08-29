@@ -46,18 +46,21 @@ class CryostatConstantCurrentGateSweep(CryostatMeasurementBase):
         step_list = up + zigzag + down + [0]
         return step_list
 
-    def _read_voltages(self):
+    def _read_voltages(self, nplc):
         # Prepare to listen for triggers
         t_vxx = threading.Thread(
-            target=self.masure_voltage_xx.start_measurement
+            target=self.masure_voltage_xx.start_measurement,
+            kwargs={'nplc': nplc}
         )
         t_vxx.start()
         t_vxy = threading.Thread(
-            target=self.masure_voltage_xy.start_measurement
+            target=self.masure_voltage_xy.start_measurement,
+            kwargs={'nplc': nplc}
         )
         t_vxy.start()
         t_vtotal = threading.Thread(
-            target=self.masure_voltage_total.start_measurement
+            target=self.masure_voltage_total.start_measurement,
+            # kwargs={'nplc': nplc}  # TODO!
         )
         t_vtotal.start()
 
@@ -68,7 +71,16 @@ class CryostatConstantCurrentGateSweep(CryostatMeasurementBase):
         v_xx = self.masure_voltage_xx.read_voltage()
         v_xy = self.masure_voltage_xy.read_voltage()
         v_total = self.masure_voltage_total.read_voltage()
-        return v_xx, v_xy, v_total
+        print(v_xx, v_xy, v_total)
+        data = {'v_total': v_total, 'v_xx': v_xx, 'v_xy': v_xy}
+        if v_xx < -1000:
+            print('ERROR IN Vxx!')
+            del(data['v_xx'])
+        if v_xy < -1000:
+            print('ERROR IN Vxy!')
+            del(data['v_xy'])
+
+        return data
 
     def abort_measurement(self):
         print('ABORT')
@@ -76,19 +88,26 @@ class CryostatConstantCurrentGateSweep(CryostatMeasurementBase):
 
     def constant_current_gate_sweep(
             self, comment, current: float, v_low: float, v_high: float,
-            steps: int, repeats: int, v_limit=1, **kwargs
+            steps: int, repeats: int, v_limit: int = 1, nplc: int = 5,
+            **kwargs
     ):
         """
         Perform a gate sweep while holding a fixed current. Measure voltage.
-        TODO!!!
+        TODO:
+        * Integration time for backgate should be configurable
+        * Source-measure delay should be configurable and stored as metadata
         """
         labels = {
-            'v_total': 'Vtotal', 'v_xx': 'Vxx', 'v_xy': 'Vxy',
             'v_backgate': 'Gate voltage', 'i_backgate': 'Gate current',
             'b_field': 'B-Field', 'vti_temp': 'VTI Temperature',
             'sample_temp': 'Sample temperature'
         }
-        self._add_metadata(labels, 208, comment, current=current, timestep=0.2)
+        self._add_metadata(labels, 208, comment)
+        labels = {'v_total': 'Vtotal'}
+        self._add_metadata(labels, 208, comment, current=current)
+        labels = {'v_xx': 'Vxx', 'v_xy': 'Vxy'}
+        self._add_metadata(labels, 208, comment, current=current, nplc=nplc)
+
         self.reset_current_measurement('dc_gate_sweep')
 
         # Configure instruments:
@@ -106,8 +125,8 @@ class CryostatConstantCurrentGateSweep(CryostatMeasurementBase):
 
         self.current_source._2182a_comm(':SENSE:VOLT:CHANNEL1:RANGE:AUTO ON')
         self.xy_nanov.set_range(0, 0)
-        self.current_source._2182a_comm('SENSE:VOLTAGE:NPLCYCLES 5')
-        self.xy_nanov.set_integration_time(5)
+        self.current_source._2182a_comm('SENSE:VOLTAGE:NPLCYCLES ' + str(nplc))
+        self.xy_nanov.set_integration_time(nplc)
         self.current_source._2182a_comm()
 
         # Set the constant current level
@@ -135,13 +154,7 @@ class CryostatConstantCurrentGateSweep(CryostatMeasurementBase):
             self.back_gate.set_voltage(gate_v)
             # Source measure dealy:
             time.sleep(0.001)  # TODO: Make the delay configurable
-            v_xx, v_xy, v_total = self._read_voltages()
-
-            data = {'v_total': v_total, 'v_xx': v_xx, 'v_xy': v_xy}
-            if v_xx < -1000:
-                del(data['v_xx'])
-            if v_xy < -1000:
-                del(data['v_xy'])
+            data = self._read_voltages(nplc)
 
             self.add_to_current_measurement(data)
             self._read_cryostat()
@@ -151,25 +164,8 @@ class CryostatConstantCurrentGateSweep(CryostatMeasurementBase):
             steps = np.arange(gate_v, 0, -0.2 * np.sign(gate_v))
             for gate_v in steps:
                 self.back_gate.set_voltage(gate_v)
-                time.sleep(0.25)
-
-                t_vxx = threading.Thread(
-                    target=self.masure_voltage_xx.start_measurement
-                )
-                t_vxx.start()
-                t_vxy = threading.Thread(
-                    target=self.masure_voltage_xy.start_measurement
-                )
-                t_vxy.start()
-                t_vtotal = threading.Thread(
-                    target=self.masure_voltage_total.start_measurement
-                )
-                t_vtotal.start()
-                self._read_gate()
-                v_xx = self.masure_voltage_xx.read_voltage()
-                v_xy = self.masure_voltage_xy.read_voltage()
-                v_total = self.masure_voltage_total.read_voltage()
-                data = {'v_xx': v_xx, 'v_xy': v_xy, 'v_total': v_total}
+                time.sleep(0.001)  # TODO: Make the delay configurable
+                data = self._read_voltages(nplc)
                 self.add_to_current_measurement(data)
 
         time.sleep(2)
