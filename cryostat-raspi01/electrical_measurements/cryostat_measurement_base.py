@@ -244,8 +244,11 @@ class CryostatMeasurementBase(object):
         # yield?
         return step_list
 
-    def _read_gate(self):
+    def _read_gate(self, store_data=True):
         voltage = self.back_gate.read_voltage()
+        if not store_data:
+            # This is just misuse to start a trigger
+            return
         current = self.back_gate.read_current()
         data = {
             'v_backgate': voltage,
