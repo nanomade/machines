@@ -2,8 +2,9 @@ import time
 
 
 class BackgroundMeasure():
-    def __init__(self):
+    def __init__(self, nplc):
         self.voltage = None
+        self.nplc = nplc
 
     def read_voltage(self):
         while self.voltage is None:
@@ -17,11 +18,13 @@ class BackgroundMeasure():
 
 
 class MeasureVxx(BackgroundMeasure):
-    def __init__(self, current_source):
-        super().__init__()
+    def __init__(self, current_source, nplc):
+        super().__init__(nplc)
         self.current_source = current_source
 
     def start_measurement(self):
+        # Sleep a bit less than the integration time
+        time.sleep(self.nplc * 0.02 * 0.9)
         self.current_source._2182a_comm(':DATA:FRESh?')
         value_raw = self.current_source._2182a_comm()
         try:
@@ -33,11 +36,13 @@ class MeasureVxx(BackgroundMeasure):
 
 
 class MeasureVxy(BackgroundMeasure):
-    def __init__(self, nano_v):
-        super().__init__()
+    def __init__(self, nano_v, nplc):
+        super().__init__(nplc)
         self.nano_v = nano_v
 
     def start_measurement(self):
+        # Sleep a bit less than the integration time
+        time.sleep(self.nplc * 0.02 * 0.9)
         voltage = self.nano_v.read_fresh()
         if voltage is None:
             voltage = -1001
@@ -45,8 +50,8 @@ class MeasureVxy(BackgroundMeasure):
 
 
 class MeasureVTotal(BackgroundMeasure):
-    def __init__(self, dmm):
-        super().__init__()
+    def __init__(self, dmm, nplc=None):
+        super().__init__(nplc)
         self.dmm = dmm
 
     def start_measurement(self):
