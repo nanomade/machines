@@ -126,7 +126,7 @@ class CryostatController(threading.Thread):
             if self.measurement is not None:
                 if len(self.measurement.current_measurement['v_xx']) > 2:
                     self.pullsocket.set_point_now(
-                        'v_sample',
+                        'v_xx',
                         self.measurement.current_measurement['v_xx'][-1]
                     )
 
