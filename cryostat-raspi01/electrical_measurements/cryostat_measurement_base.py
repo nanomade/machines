@@ -21,7 +21,6 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
     'current_time': 0,
     'current': [],
     'v_total': [],
-    # 'v_sample': [],
     'v_xx': [],
     'v_xy': [],
     'dv_di': [],
@@ -197,13 +196,15 @@ class CryostatMeasurementBase(object):
 
     def _add_metadata(self,
                       labels, meas_type, comment, timestep=None,
-                      freq=None, current=None, delta_i=None):
+                      freq=None, current=None, delta_i=None,
+                      nplc=None):
         metadata = {
             'Time': CustomColumn(time.time(), "FROM_UNIXTIME(%s)"),
             'label': None,
             'type': meas_type,
             'current': current,
             'comment': comment,
+            'nplc': nplc,
             'timestep': timestep,
             'frequency': freq,
             'delta_i': delta_i,
