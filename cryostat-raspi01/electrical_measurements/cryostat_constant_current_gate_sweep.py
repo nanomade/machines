@@ -28,29 +28,6 @@ class CryostatConstantCurrentGateSweep(CryostatDCBase):
         step_list = up + zigzag + down + [0]
         return step_list
 
-    def _configure_source(self, v_limit, current):
-        """
-        Configure current source
-        todo: This might belong in DC Base
-        """
-        self.current_source.set_voltage_limit(v_limit)
-        self.current_source.set_current_range(current)
-        self.current_source.set_current(0)
-        self.current_source.output_state(True)
-
-    def _configure_dmm(self, v_limit):
-        """
-        Configure  Model 2000 used for 2-point measurement
-        The unit is set up to measure on the buffered guard output of
-        the 6221.
-        todo: This might belong in DC Base
-        """
-        self.dmm.configure_measurement_type('volt:dc')
-        self.dmm.set_range(v_limit)
-        self.dmm.set_integration_time(2)
-        # TODO: Replace the line below with a line that configures a trigger
-        self.dmm.scpi_comm(':INIT:CONT ON')  # TODO: Add this to driver
-
     def _configure_nano_voltmeters(self, nplc):
         """
         Confgire the 2182a's for voltage measurement
@@ -102,7 +79,7 @@ class CryostatConstantCurrentGateSweep(CryostatDCBase):
         self.reset_current_measurement('dc_gate_sweep')
 
         # Configure instruments:
-        self._configure_source(v_limit=v_limit, current=current)
+        self._configure_source(v_limit=v_limit, current_range=current)
         self._configure_dmm(v_limit=v_limit)
         self._configure_nano_voltmeters(nplc)
         self._configure_back_gate()
