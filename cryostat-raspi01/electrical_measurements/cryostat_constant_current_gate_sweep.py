@@ -1,32 +1,14 @@
 import time
-import threading
 
 import numpy as np
 
-from PyExpLabSys.drivers.keithley_2400 import Keithley2400
-from PyExpLabSys.drivers.keithley_2182 import Keithley2182
 from cryostat_measurement_base import CryostatMeasurementBase
-
-from cryostat_threaded_voltage import MeasureVxx
-from cryostat_threaded_voltage import MeasureVxy
-from cryostat_threaded_voltage import MeasureVTotal
+from cryostat_dc_base import CryostatDCBase
 
 
-class CryostatConstantCurrentGateSweep(CryostatMeasurementBase):
+class CryostatConstantCurrentGateSweep(CryostatDCBase):
     def __init__(self):
         super().__init__()
-
-        self.back_gate = Keithley2400(interface='gpib', gpib_address=22)
-        # self.dmm and self.current_source are always in the base
-        # xy_nanov is interfaced via the current source
-        device = 'usb-Prolific_Technology_Inc._USB-Serial_Controller_D-if00-port0'
-        self.xy_nanov = Keithley2182(
-            interface='serial',
-            device='/dev/serial/by-id/' + device,
-        )
-        self.masure_voltage_xx = MeasureVxx(self.current_source)
-        self.masure_voltage_xy = MeasureVxy(self.xy_nanov)
-        self.masure_voltage_total = MeasureVTotal(self.dmm)
 
     def _calculate_steps(self, v_low, v_high, steps, repeats):
         """ This code is also used in the Linkham code """
@@ -46,41 +28,51 @@ class CryostatConstantCurrentGateSweep(CryostatMeasurementBase):
         step_list = up + zigzag + down + [0]
         return step_list
 
-    def _read_voltages(self, nplc):
-        # Prepare to listen for triggers
-        t_vxx = threading.Thread(
-            target=self.masure_voltage_xx.start_measurement,
-            kwargs={'nplc': nplc}
-        )
-        t_vxx.start()
-        t_vxy = threading.Thread(
-            target=self.masure_voltage_xy.start_measurement,
-            kwargs={'nplc': nplc}
-        )
-        t_vxy.start()
-        t_vtotal = threading.Thread(
-            target=self.masure_voltage_total.start_measurement,
-            # kwargs={'nplc': nplc}  # TODO!
-        )
-        t_vtotal.start()
+    def _configure_source(self, v_limit, current):
+        """
+        Configure current source
+        todo: This might belong in DC Base
+        """
+        self.current_source.set_voltage_limit(v_limit)
+        self.current_source.set_current_range(current)
+        self.current_source.set_current(0)
+        self.current_source.output_state(True)
 
-        # This will both read the gate and trigger the 2182a's
-        self._read_gate()
+    def _configure_dmm(self, v_limit):
+        """
+        Configure  Model 2000 used for 2-point measurement
+        The unit is set up to measure on the buffered guard output of
+        the 6221.
+        todo: This might belong in DC Base
+        """
+        self.dmm.configure_measurement_type('volt:dc')
+        self.dmm.set_range(v_limit)
+        self.dmm.set_integration_time(2)
+        # TODO: Replace the line below with a line that configures a trigger
+        self.dmm.scpi_comm(':INIT:CONT ON')  # TODO: Add this to driver
 
-        # Read the measured result
-        v_xx = self.masure_voltage_xx.read_voltage()
-        v_xy = self.masure_voltage_xy.read_voltage()
-        v_total = self.masure_voltage_total.read_voltage()
-        print(v_xx, v_xy, v_total)
-        data = {'v_total': v_total, 'v_xx': v_xx, 'v_xy': v_xy}
-        if v_xx < -1000:
-            print('ERROR IN Vxx!')
-            del(data['v_xx'])
-        if v_xy < -1000:
-            print('ERROR IN Vxy!')
-            del(data['v_xy'])
+    def _configure_nano_voltmeters(self, nplc):
+        """
+        Confgire the 2182a's for voltage measurement
+        todo: This might belong in DC Base
+        todo: Setup for external triggering (now done via frontpanel)
+        todo: accept other range than auto-range
+        """
+        self.current_source._2182a_comm(':SENSE:VOLT:CHANNEL1:RANGE:AUTO ON')
+        self.xy_nanov.set_range(0, 0)
+        self.current_source._2182a_comm('SENSE:VOLTAGE:NPLCYCLES ' + str(nplc))
+        self.xy_nanov.set_integration_time(nplc)
+        self.current_source._2182a_comm()
 
-        return data
+    def _configure_back_gate(self):
+        """
+        Confgire the 2400 for gating
+        todo: This might belong in DC Base
+        """
+        self.back_gate.set_source_function('v')
+        self.back_gate.set_current_limit(1e-4)
+        self.back_gate.set_voltage(0)
+        self.back_gate.output_state(True)
 
     def abort_measurement(self):
         print('ABORT')
@@ -107,38 +99,19 @@ class CryostatConstantCurrentGateSweep(CryostatMeasurementBase):
         self._add_metadata(labels, 208, comment, current=current)
         labels = {'v_xx': 'Vxx', 'v_xy': 'Vxy'}
         self._add_metadata(labels, 208, comment, current=current, nplc=nplc)
-
         self.reset_current_measurement('dc_gate_sweep')
 
         # Configure instruments:
-        # Current source
-        self.current_source.set_voltage_limit(v_limit)
-        self.current_source.set_current_range(current)
-        self.current_source.set_current(0)
-        self.current_source.output_state(True)
-
-        # Model 2000 2-point measurement
-        self.dmm.configure_measurement_type('volt:dc')
-        self.dmm.set_range(v_limit)
-        self.dmm.set_integration_time(2)
-        self.dmm.scpi_comm(':INIT:CONT ON')  # TODO: Add this to driver
-
-        self.current_source._2182a_comm(':SENSE:VOLT:CHANNEL1:RANGE:AUTO ON')
-        self.xy_nanov.set_range(0, 0)
-        self.current_source._2182a_comm('SENSE:VOLTAGE:NPLCYCLES ' + str(nplc))
-        self.xy_nanov.set_integration_time(nplc)
-        self.current_source._2182a_comm()
+        self._configure_source(v_limit=v_limit, current=current)
+        self._configure_dmm(v_limit=v_limit)
+        self._configure_nano_voltmeters(nplc)
+        self._configure_back_gate()
 
         # Set the constant current level
         self.current_source.set_current(current)
         time.sleep(0.1)
         if not self._check_I_source_status():
             return
-
-        self.back_gate.set_source_function('v')
-        self.back_gate.set_current_limit(1e-4)
-        self.back_gate.set_voltage(0)
-        self.back_gate.output_state(True)
 
         time.sleep(0.1)
         self._read_gate()
