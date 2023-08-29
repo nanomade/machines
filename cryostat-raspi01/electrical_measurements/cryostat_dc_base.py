@@ -30,6 +30,27 @@ class CryostatDCBase(CryostatMeasurementBase):
         self.masure_voltage_xy = MeasureVxy(self.xy_nanov)
         self.masure_voltage_total = MeasureVTotal(self.dmm)
 
+    def _configure_dmm(self, v_limit):
+        """
+        Configure  Model 2000 used for 2-point measurement
+        The unit is set up to measure on the buffered guard output of
+        the 6221.
+        """
+        self.dmm.configure_measurement_type('volt:dc')
+        self.dmm.set_range(v_limit)
+        self.dmm.set_integration_time(2)
+        # TODO: Replace the line below with a line that configures a trigger
+        self.dmm.scpi_comm(':INIT:CONT ON')  # TODO: Add this to driver
+
+    def _configure_source(self, v_limit, current_range):
+        """
+        Configure current source
+        """
+        self.current_source.set_voltage_limit(v_limit)
+        self.current_source.set_current_range(current_range)
+        self.current_source.set_current(0)
+        self.current_source.output_state(True)
+
     def _read_voltages(self, nplc):
         # Prepare to listen for triggers
         t_vxx = threading.Thread(
