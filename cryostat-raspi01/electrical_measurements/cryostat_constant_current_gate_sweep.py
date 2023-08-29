@@ -28,29 +28,6 @@ class CryostatConstantCurrentGateSweep(CryostatDCBase):
         step_list = up + zigzag + down + [0]
         return step_list
 
-    def _configure_nano_voltmeters(self, nplc):
-        """
-        Confgire the 2182a's for voltage measurement
-        todo: This might belong in DC Base
-        todo: Setup for external triggering (now done via frontpanel)
-        todo: accept other range than auto-range
-        """
-        self.current_source._2182a_comm(':SENSE:VOLT:CHANNEL1:RANGE:AUTO ON')
-        self.xy_nanov.set_range(0, 0)
-        self.current_source._2182a_comm('SENSE:VOLTAGE:NPLCYCLES ' + str(nplc))
-        self.xy_nanov.set_integration_time(nplc)
-        self.current_source._2182a_comm()
-
-    def _configure_back_gate(self):
-        """
-        Confgire the 2400 for gating
-        todo: This might belong in DC Base
-        """
-        self.back_gate.set_source_function('v')
-        self.back_gate.set_current_limit(1e-4)
-        self.back_gate.set_voltage(0)
-        self.back_gate.output_state(True)
-
     def abort_measurement(self):
         print('ABORT')
         self.reset_current_measurement(None, error='Aborted')
