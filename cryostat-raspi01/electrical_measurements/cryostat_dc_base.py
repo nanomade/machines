@@ -15,10 +15,6 @@ class CryostatDCBase(CryostatMeasurementBase):
     def __init__(self):
         super().__init__()
 
-        # Back gate is not used by all DC measurements, but currently
-        # it is also being mis-used for triggering in non-gated
-        # measurements. This might change in the future :)
-        self.back_gate = Keithley2400(interface='gpib', gpib_address=22)
         # self.dmm and self.current_source are always in the base
         # xx_nanov is interfaced via the current source
         device = 'usb-Prolific_Technology_Inc._USB-Serial_Controller_D-if00-port0'
