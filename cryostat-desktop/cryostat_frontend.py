@@ -29,7 +29,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.t_start = time.time()
         uic.loadUi('cryostat_frontend.ui', self)
-
+        # I am not sure how to set this default in QTDesigner...
+        self.nano_vm_nplc.setCurrentText('5')
+        
         self.vti_temp_setpoint.valueChanged.connect(self._update_vti_temp)
         self.sample_temp_setpoint.valueChanged.connect(self._update_sample_temp)
         self.b_field_setpoint.valueChanged.connect(self._update_b_field)
@@ -37,7 +39,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.activate_ramp_button.clicked.connect(self._activate_ramp)
         self.stop_ramp_button.clicked.connect(self._stop_ramp)
 
-        self.start_4point_delta_button.clicked.connect(self._start_4point_delta)
+        # Connect to buttons
+        self.start_4p_dc_gate_sweep_button.clicked.connect(
+            self._start_4p_dc_gate_sweep)
+        self.start_4p_dc_iv_button.clicked.connect(
+            self._start_4p_dc_iv_curve)
+        self.start_differential_conductance_button.clicked.connect(
+            self._start_differential_conductance)
+        self.start_delta_constant_current_button.clicked.connect(
+            self._start_delta_constant_current)
+
         self.abort_measurement_button.clicked.connect(self._abort_measurement)
 
         self.temperature_plot.setBackground('w')
@@ -51,6 +62,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.b_field_x = []
         self.b_field_y = []
 
+        self.measurement_plot_x = []
+        self.measurement_plot_y = []
+        
         self.ramp_start = 0
         self.ramp = None
 
@@ -67,6 +81,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.b_field_line = self.b_field_plot.plot(
             self.vti_temp_x,
             self.vti_temp_y, pen=pen
+        )
+        self.measurement_line = self.status_plot.plot(
+            self.measurement_plot_x,
+            self.measurement_plot_y, pen=pen
         )
 
         self.timer = QtCore.QTimer()
@@ -155,10 +173,77 @@ class MainWindow(QtWidgets.QMainWindow):
         }
         self._write_socket(command, 8510)
 
-    def _start_4point_delta(self):
+    def _start_4p_dc_gate_sweep(self):
         comment = self.measurement_comment.text()
-        current = self.delta_4_point_current.value()
-        measure_time = self.delta_4_point_measure_time.value()
+        current = self.cc_dc_gate_sweep_current.value() * 1e-6
+        v_limit = self.current_source_max_voltage.value()
+        v_low = self.cc_dc_gate_sweep_v_low.value()
+        v_high = self.cc_dc_gate_sweep_v_high.value()
+        steps =  int(self.cc_dc_gate_sweep_steps.value())
+        repeats = int(self.cc_dc_gate_sweep_repeats.value())
+        nplc = float(self.nano_vm_nplc.currentText())
+        if len(comment) < 5:
+            self.alert('Comment too short')
+            return False
+
+        command = {
+            'cmd': 'start_measurement',
+            'measurement': 'constant_current_gate_sweep',
+            'comment': comment,
+            'current': current,
+            'v_limit': v_limit,
+            'v_low': v_low,
+            'v_high': v_high,
+            'steps': steps,
+            'repeats': repeats,
+            'nplc': nplc
+        }
+        print(command)
+        self._write_socket(command, 8510)
+
+    def _start_4p_dc_iv_curve(self):
+        comment = self.measurement_comment.text()
+        v_limit = self.current_source_max_voltage.value()
+        start = self.dc_iv_start_current.value() * 1e-6
+        stop = self.dc_iv_end_current.value() * 1e-6
+        steps = int(self.dc_iv_steps.value())
+        command = {
+            'cmd': 'start_measurement',
+            'measurement': 'dc_4_point',
+            'comment': comment,
+            'start': start, 
+            'stop': stop,
+            'steps': steps,
+            'v_limit': v_limit,
+        }
+        print(command)
+        self._write_socket(command, 8510)
+
+    def _start_differential_conductance(self):
+        comment = self.measurement_comment.text()
+        v_limit = self.current_source_max_voltage.value()
+        start = self.differential_conductance_start_current.value() * 1e-6
+        stop = self.differential_conductance_end_current.value() * 1e-6
+        delta = self.differential_conductance_delta.value() * 1e-6
+        steps = int(self.differential_conductance_steps.value())
+        command = {
+            'cmd': 'start_measurement',
+            'measurement': 'diff_conductance',
+            'comment': comment,
+            'start': start, 
+            'stop': stop,
+            'steps': steps,
+            'delta': delta,
+            'v_limit': v_limit,
+        }
+        print(command)
+        self._write_socket(command, 8510)
+        
+    def _start_delta_constant_current(self):
+        comment = self.measurement_comment.text()
+        current = self.constant_current_delta_current.value() * 1e-6
+        measure_time = self.constant_current_delta_measure_time.value()
+        v_limit = self.current_source_max_voltage.value()
         if len(comment) < 5:
             self.alert('Comment too short')
             return False
@@ -168,11 +253,12 @@ class MainWindow(QtWidgets.QMainWindow):
             'measurement': 'delta_constant_current',
             'comment': comment,
             'current': current,
+            'v_limit': v_limit,
+            # todo: nplc
             'measure_time': measure_time
         }
         print(command)
-        # self._write_socket(command, 8510)
-        
+        self._write_socket(command, 8510)        
         
     def _update_vti_temp(self):
         setpoint = self.vti_temp_setpoint.value()
@@ -203,6 +289,66 @@ class MainWindow(QtWidgets.QMainWindow):
         self.read_socket_in_use = False
         return value
 
+    def _update_temp_and_field(self):
+        # TODO:
+        # Consider to move all the socket reads into a separate thread that
+        # will continuously track these values
+        vti_temp = self._read_socket('cryostat_vti_temperature')
+        sample_temp = self._read_socket('cryostat_sample_temperature')
+        b_field = self._read_socket('cryostat_magnetic_field')
+        if vti_temp is None or b_field is None:
+            return
+        self.sample_temp_show.setText('{:.2f}K'.format(sample_temp))
+        self.vti_temp_show.setText('{:.2f}K'.format(vti_temp))
+        self.b_field_show.setText('{:.6f}T'.format(b_field))
+
+        self.vti_temp_x.append(time.time() - self.t_start)
+        self.vti_temp_y.append(vti_temp)
+        self.sample_temp_x.append(time.time() - self.t_start)
+        self.sample_temp_y.append(sample_temp)
+
+        self.b_field_x.append(time.time() - self.t_start)
+        self.b_field_y.append(b_field)
+        self.vti_temp_line.setData(self.vti_temp_x, self.vti_temp_y)
+        self.sample_temp_line.setData(self.sample_temp_x, self.sample_temp_y)
+        self.b_field_line.setData(self.b_field_x, self.b_field_y)
+
+    def update_plot_data(self):
+        if self.ramp_start > 0:
+            current_ramp_time = time.time() - self.ramp_start
+            msg = '{:.1f}s ({:.2f}min)'
+            self.ramp_time_show.setText(
+                msg.format(current_ramp_time, current_ramp_time/60.0)
+            )
+            ramp_time_sum = 0
+            ramp_line = 0
+            for row in self.ramp:
+                dt = row['dt'] * 60
+                if ramp_time_sum + dt < current_ramp_time:
+                    ramp_time_sum += dt
+                    ramp_line += 1
+
+        vti_temp = self._read_socket('cryostat_vti_temperature')
+        sample_temp = self._read_socket('cryostat_sample_temperature')
+        b_field = self._read_socket('cryostat_magnetic_field')
+        if vti_temp is None or b_field is None:
+            return
+        self.sample_temp_show.setText('{:.2f}K'.format(sample_temp))
+        self.vti_temp_show.setText('{:.2f}K'.format(vti_temp))
+        self.b_field_show.setText('{:.6f}T'.format(b_field))
+
+        self.vti_temp_x.append(time.time() - self.t_start)
+        self.vti_temp_y.append(vti_temp)
+        self.sample_temp_x.append(time.time() - self.t_start)
+        self.sample_temp_y.append(sample_temp)
+
+        self.b_field_x.append(time.time() - self.t_start)
+        self.b_field_y.append(b_field)
+        self.vti_temp_line.setData(self.vti_temp_x, self.vti_temp_y)
+        self.sample_temp_line.setData(self.sample_temp_x, self.sample_temp_y)
+        self.b_field_line.setData(self.b_field_x, self.b_field_y)
+        return
+
     def update_plot_data(self):
         if self.ramp_start > 0:
             current_ramp_time = time.time() - self.ramp_start
@@ -229,33 +375,34 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.ramp_time_show.setText('')
 
-        if not self.read_socket_in_use:
-            vti_temp = self._read_socket('cryostat_vti_temperature')
-            sample_temp = self._read_socket('cryostat_sample_temperature')
-            b_field = self._read_socket('cryostat_magnetic_field')
-            if vti_temp is None or b_field is None:
-                return
-            self.sample_temp_show.setText('{:.2f}K'.format(sample_temp))
-            self.vti_temp_show.setText('{:.2f}K'.format(vti_temp))
-            self.b_field_show.setText('{:.6f}T'.format(b_field))
+        if self.read_socket_in_use:
+            time.sleep(0.05)
+            return
 
-            self.vti_temp_x.append(time.time() - self.t_start)
-            self.vti_temp_y.append(vti_temp)
-            self.sample_temp_x.append(time.time() - self.t_start)
-            self.sample_temp_y.append(sample_temp)
+        self._update_temp_and_field()
 
-            self.b_field_x.append(time.time() - self.t_start)
-            self.b_field_y.append(b_field)
+        # Read status of ongoing measurement
+        status = self._read_socket('status', 9002)
+        v_xx = self._read_socket('v_xx', 9002)
+            
+        measurement_type = status['type']
+        print(measurement_type)
+        if measurement_type is None:
+            self.current_measurement_show.setText('No measurement')
+            self.measurement_plot_x = []
+            self.measurement_plot_y = []
+        else:
+            self.current_measurement_show.setText(measurement_type)
+            if v_xx is not None:
+                if self.measurement_plot_x:
+                    if self.measurement_plot_x[-1] > v_xx[0]:
+                        self.measurement_plot_x = []
+                        self.measurement_plot_y = []
 
-            # Read status of ongoing measurement
-            status = self._read_socket('status', 9002)
-            print('status', status, type(status))
-            measurement_type = status['type']
-            print(measurement_type)
-
-        self.vti_temp_line.setData(self.vti_temp_x, self.vti_temp_y)
-        self.sample_temp_line.setData(self.sample_temp_x, self.sample_temp_y)
-        self.b_field_line.setData(self.b_field_x, self.b_field_y)
+                self.measurement_plot_x.append(v_xx[0])
+                self.measurement_plot_y.append(v_xx[1])
+        self.measurement_line.setData(
+            self.measurement_plot_x, self.measurement_plot_y)
 
 
 def main():
