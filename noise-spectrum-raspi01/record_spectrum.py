@@ -181,7 +181,7 @@ class NoiseSpectrumRecorder:
         print('record_xy_measurement done')
 
     def record_sweeped_xy_measurement(
-        self, comment, time_pr_step, high, low, steps, log_scale, **kwargs
+        self, comment, time_pr_step, high, low, steps, log_scale=True, **kwargs
     ):
         self.measurement_running = True
         metadata = self._read_metadata(212, comment)
