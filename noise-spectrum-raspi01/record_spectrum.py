@@ -19,6 +19,11 @@ class NoiseSpectrumRecorder:
             credentials.passwd,
         )
         self.data_set_saver.start()
+        self.current_data = {
+            'x': -1,
+            'y': -1,
+            'freq': -1,
+        }
         self.measurement_running = False
         self.abort = False
 
@@ -38,6 +43,7 @@ class NoiseSpectrumRecorder:
             self.data_set_saver.save_point('y_noise', (delta_t, data[1]))
             self.data_set_saver.save_point('x_value', (delta_t, data[2]))
             self.data_set_saver.save_point('y_value', (delta_t, data[3]))
+            self.current_data.update({'x': data[2], 'y': data[3]})
 
     def _perform_sweeped_xy_measurement(self, time_pr_step, frequencies):
         self.lock_in.use_internal_freq_reference(frequencies[0])
@@ -64,6 +70,7 @@ class NoiseSpectrumRecorder:
                 self.data_set_saver.save_point('y_noise', (total_t, data[1]))
                 self.data_set_saver.save_point('x_value', (total_t, data[2]))
                 self.data_set_saver.save_point('y_value', (total_t, data[3]))
+                self.current_data = {'x': data[2], 'y': data[3], 'freq': freq}
 
     def _perform_spectrum_measurement(self, frequencies):
         data = {}
@@ -79,6 +86,7 @@ class NoiseSpectrumRecorder:
             self.data_set_saver.save_point('y_noise', (freq, data[1]))
             self.data_set_saver.save_point('x_value', (freq, data[2]))
             self.data_set_saver.save_point('y_value', (freq, data[3]))
+            self.current_data = {'x': data[2], 'y': data[3], 'freq': freq}
 
     def _caluculate_frequency_steps(self, freq_high, freq_low, steps, log_scale=True):
         if log_scale:
@@ -133,6 +141,14 @@ class NoiseSpectrumRecorder:
             self.data_set_saver.add_measurement('freq', metadata)
         return True
 
+    def read_current_data(self):
+        # If measurement is running, the data-record process
+        # is reponsible for keeping self.current_data up to data
+        if not self.measurement_running:
+            x, y, f = self.lock_in.read_x_and_y()
+            self.current_data = {'x': x, 'y': y, 'freq': f}
+        return self.current_data
+
     def abort_measurement(self):
         aborted = False
         if self.measurement_running:
@@ -141,17 +157,19 @@ class NoiseSpectrumRecorder:
         return aborted
 
     # Todo: measurement_running could be handled as a context manager
-    def record_spectrum(self, comment, high, low, steps, log_scale):
+    def record_spectrum(self, comment, high, low, steps, log_scale=True, **kwargs):
         self.measurement_running = True
         metadata = self._read_metadata(210, comment)
         del metadata['frequency']  # This is scanned
         self._prepare_data_recording(metadata)
-
         frequencies = self._caluculate_frequency_steps(high, low, steps, log_scale)
         self._perform_spectrum_measurement(frequencies)
         self.measurement_running = False
+        print('record spectrum done')
 
-    def record_xy_measurement(self, comment, acquisition_time, frequency=None):
+    def record_xy_measurement(
+        self, comment, acquisition_time, frequency=None, **kwargs
+    ):
         self.measurement_running = True
         if frequency is not None:
             self.lock_in.use_internal_freq_reference(frequency)
@@ -160,9 +178,10 @@ class NoiseSpectrumRecorder:
         self._prepare_data_recording(metadata)
         self._perform_xy_measurement(acquisition_time)
         self.measurement_running = False
+        print('record_xy_measurement done')
 
     def record_sweeped_xy_measurement(
-        self, comment, time_pr_step, high, low, steps, log_scale
+        self, comment, time_pr_step, high, low, steps, log_scale, **kwargs
     ):
         self.measurement_running = True
         metadata = self._read_metadata(212, comment)
@@ -172,6 +191,7 @@ class NoiseSpectrumRecorder:
         frequencies = self._caluculate_frequency_steps(high, low, steps, log_scale)
         self._perform_sweeped_xy_measurement(time_pr_step, frequencies)
         self.measurement_running = False
+        print('record sweeped xy measurements done')
 
 
 if __name__ == '__main__':
@@ -181,4 +201,6 @@ if __name__ == '__main__':
 
     # nsr.record_spectrum(comment='100Mohm resistor', **frequency_steps)
     # nsr.record_xy_measurement(comment='100Mohm resistor', acquisition_time=100, frequency=765.2)
-    nsr.record_sweeped_xy_measurement(comment='100Mohm resistor', time_pr_step=10, **frequency_steps)
+    nsr.record_sweeped_xy_measurement(
+        comment='100Mohm resistor', time_pr_step=10, **frequency_steps
+    )
