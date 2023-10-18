@@ -12,8 +12,8 @@ class CryostatDifferentialConductance(CryostatMeasurementBase):
         self.reset_current_measurement(None, error='Aborted')
 
     def differential_conductance_measurement(
-            self, comment, start: float, stop: float, steps: int,
-            delta: float, v_limit: float, nplc: float = 5, **kwargs
+            self, comment, start: float, stop: float, steps: int, delta: float,
+            v_limit: float, nplc: float = 5, gate_v: float = None, **kwargs
     ):
         """
         Perform a differential conductance measurement
@@ -23,11 +23,13 @@ class CryostatDifferentialConductance(CryostatMeasurementBase):
         # TODO: Add v_limit
         """
         labels = {
-            # 'v_total': 'Vtotal',
             'dv_di': 'dV/dI', 'v_xx': 'Vxx', 'v_total': 'Vtotal',
             'current': 'Current', 'b_field': 'B-Field',
             'sample_temp': 'Sample Temperature', 'vti_temp': 'VTI Temperature'
         }
+        # TODO: Clean up metadata, currently nplc is added to too many parameters
+        self._add_metadata(labels, 206, comment, nplc=nplc, delta_i=delta)
+        self.reset_current_measurement('differential_conductance')
 
         # Configure dmm
         self.dmm.set_trigger_source(external=True)
@@ -35,8 +37,12 @@ class CryostatDifferentialConductance(CryostatMeasurementBase):
         # Be fast enough to resolve the speed of delta mode
         self.dmm.set_integration_time(0.1)
 
-        self._add_metadata(labels, 206, comment, timestep=0.2, delta_i=delta)
-        self.reset_current_measurement('differential_conductance')
+        # TODO: We cannot measure gate_v and current here, because it currently
+        # messes up with the trigger-mechanism of the differential conductance
+        # Consider to do a single measurement before and after main run
+        self._configure_back_gate()
+        if gate_v is not None:
+            self.back_gate.set_voltage(gate_v)
 
         self.current_source.perform_differential_conductance_measurement(
             start=start, stop=stop, steps=steps, delta=delta,
@@ -91,6 +97,8 @@ class CryostatDifferentialConductance(CryostatMeasurementBase):
         # nvz = self.scpi_comm('SOUR:DCON:NVZ?').strip()
         # print('NVZero', nvz)
         self.current_source.end_delta_measurement()
+        if gate_v is not None:
+            self.back_gate.set_voltage(0)
         time.sleep(2)
 
         # Indicate that the measurement is completed
@@ -103,7 +111,8 @@ class CryostatDifferentialConductance(CryostatMeasurementBase):
             start=-1e-5,
             stop=1e-5,
             step=1e-7,
-            delta=1.1e-7
+            delta=1.1e-7,
+            gate_v=0.5,
         )
 
 
