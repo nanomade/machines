@@ -1,12 +1,11 @@
 import json
 import time
 import socket
-# import logging
-import threading
 
 import Gpib  # linux-gpib, user space wrapper to kernel driver
 
 from PyExpLabSys.drivers.keithley_2000 import Keithley2000
+from PyExpLabSys.drivers.keithley_2400 import Keithley2400
 from PyExpLabSys.drivers.keithley_6220 import Keithley6220
 # Todo: Check why CustomColumn is needed???
 from PyExpLabSys.common.database_saver import DataSetSaver, CustomColumn
@@ -37,12 +36,7 @@ class CryostatMeasurementBase(object):
     def __init__(self):
         self.current_measurement = CURRENT_MEASUREMENT_PROTOTYPE.copy()
 
-        # Back gate is not used by all measurements, but currently
-        # it is also being mis-used for triggering measurements.
-        # This might change in the future :)
         self.back_gate = Keithley2400(interface='gpib', gpib_address=22)
-
-        self.back_gate = None  # Used for gated measurements
         self.nanov1 = None  # Used for DC measurements
         self.lock_in = None  # Used for AC measurements
         self.current_source = Keithley6220(interface='lan', hostname='192.168.0.3')
@@ -153,7 +147,7 @@ class CryostatMeasurementBase(object):
             'vti_temp': vti_temp,
             'sample_temp': sample_temp,
         }
-        if not None in data.values():
+        if None not in data.values():
             self.add_to_current_measurement(data)
 
     def instrument_id(self):
@@ -233,7 +227,8 @@ class CryostatMeasurementBase(object):
         if not source_ok:
             print('ABORT DUE TO COMPLIENCE')
             self.reset_current_measurement(None, error=True)
-            self.current_source.stop_and_unarm_sweep()  # TODO - execute only the relevant stop function
+            # TODO - execute only the relevant stop function
+            self.current_source.stop_and_unarm_sweep()
             self.current_source.stop_and_unarm_wave()
             self.current_source.set_current(0)
             self.current_source.output_state(False)
@@ -269,7 +264,7 @@ class CryostatMeasurementBase(object):
         # show status data such as current and DMM voltage
         # in the frontend
         pass
-    
+
     # This will move into its own class - not to be used from here
     # def gated_ac_4_point_measurement(
     #         self,
