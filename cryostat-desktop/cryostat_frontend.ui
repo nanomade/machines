@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1138</width>
+    <width>1086</width>
     <height>1045</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="Main_tab">
        <attribute name="title">
@@ -472,7 +472,7 @@
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_6">
+           <layout class="QHBoxLayout" name="current_mesurement_common_conf_horizontalLayout">
             <item>
              <layout class="QHBoxLayout" name="current_measurement_horizontalLayout">
               <item>
@@ -626,7 +626,7 @@
            </size>
           </property>
           <property name="currentIndex">
-           <number>2</number>
+           <number>3</number>
           </property>
           <widget class="QWidget" name="DCGateSweepTab">
            <attribute name="title">
@@ -980,6 +980,42 @@
                </layout>
               </item>
               <item>
+               <layout class="QVBoxLayout" name="dc_iv_gate_v_verticalLayout">
+                <item>
+                 <widget class="QLabel" name="dc_iv_gate_v_label">
+                  <property name="text">
+                   <string>Gate V</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="dc_iv_gate_v">
+                  <property name="maximumSize">
+                   <size>
+                    <width>142</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="decimals">
+                   <number>2</number>
+                  </property>
+                  <property name="minimum">
+                   <double>-100.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>100.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.250000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>0.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
                <spacer name="horizontalSpacer_6">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
@@ -1180,6 +1216,42 @@
                </layout>
               </item>
               <item>
+               <layout class="QVBoxLayout" name="differential_conductance_delta_gate_v_verticalLayout">
+                <item>
+                 <widget class="QLabel" name="differential_conductance_gate_v_label">
+                  <property name="text">
+                   <string>Gate V</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="differential_conductance_gate_v">
+                  <property name="maximumSize">
+                   <size>
+                    <width>142</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="decimals">
+                   <number>2</number>
+                  </property>
+                  <property name="minimum">
+                   <double>-100.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>100.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.250000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>0.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
                <spacer name="differential_conductance_horizontalSpacer">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
@@ -1236,9 +1308,9 @@
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_8">
               <item>
-               <layout class="QVBoxLayout" name="verticalLayout_9">
+               <layout class="QVBoxLayout" name="constant_current_delta_measure_time_verticalLayout">
                 <item>
-                 <widget class="QLabel" name="label_9">
+                 <widget class="QLabel" name="delta_constant_current_measure_time_label">
                   <property name="text">
                    <string>Measure Time / s</string>
                   </property>
@@ -1269,9 +1341,9 @@
                </layout>
               </item>
               <item>
-               <layout class="QVBoxLayout" name="verticalLayout_8">
+               <layout class="QVBoxLayout" name="costant_current_delta_current_verticalLayout">
                 <item>
-                 <widget class="QLabel" name="label_4">
+                 <widget class="QLabel" name="constant_current_delta_current_label">
                   <property name="text">
                    <string>Current / μA</string>
                   </property>
@@ -1296,6 +1368,42 @@
                   </property>
                   <property name="singleStep">
                    <double>1.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="costant_current_delta_gate_v_verticalLayout">
+                <item>
+                 <widget class="QLabel" name="constant_current_delta_gate_v_label">
+                  <property name="text">
+                   <string>Gate V</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="constant_current_delta_gate_v">
+                  <property name="maximumSize">
+                   <size>
+                    <width>142</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="decimals">
+                   <number>2</number>
+                  </property>
+                  <property name="minimum">
+                   <double>-100.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>100.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.250000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>0.000000000000000</double>
                   </property>
                  </widget>
                 </item>
@@ -1363,7 +1471,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1138</width>
+     <width>1086</width>
      <height>22</height>
     </rect>
    </property>

@@ -207,6 +207,8 @@ class MainWindow(QtWidgets.QMainWindow):
         start = self.dc_iv_start_current.value() * 1e-6
         stop = self.dc_iv_end_current.value() * 1e-6
         steps = int(self.dc_iv_steps.value())
+        nplc = float(self.nano_vm_nplc.currentText())
+        gate_v = self.dc_iv_gate_v.value()
         command = {
             'cmd': 'start_measurement',
             'measurement': 'dc_4_point',
@@ -215,6 +217,8 @@ class MainWindow(QtWidgets.QMainWindow):
             'stop': stop,
             'steps': steps,
             'v_limit': v_limit,
+            'nplc': nplc,
+            'gate_v': gate_v,
         }
         print(command)
         self._write_socket(command, 8510)
@@ -225,7 +229,10 @@ class MainWindow(QtWidgets.QMainWindow):
         start = self.differential_conductance_start_current.value() * 1e-6
         stop = self.differential_conductance_end_current.value() * 1e-6
         delta = self.differential_conductance_delta.value() * 1e-6
+        gate_v = self.differential_conductance_gate_v.value()
         steps = int(self.differential_conductance_steps.value())
+        nplc = float(self.nano_vm_nplc.currentText())
+
         command = {
             'cmd': 'start_measurement',
             'measurement': 'diff_conductance',
@@ -235,6 +242,8 @@ class MainWindow(QtWidgets.QMainWindow):
             'steps': steps,
             'delta': delta,
             'v_limit': v_limit,
+            'nplc': nplc,
+            'gate_v': gate_v,
         }
         print(command)
         self._write_socket(command, 8510)
@@ -244,6 +253,7 @@ class MainWindow(QtWidgets.QMainWindow):
         current = self.constant_current_delta_current.value() * 1e-6
         measure_time = self.constant_current_delta_measure_time.value()
         v_limit = self.current_source_max_voltage.value()
+        gate_v = self.constant_current_delta_gate_v.value()
         if len(comment) < 5:
             self.alert('Comment too short')
             return False
@@ -254,6 +264,7 @@ class MainWindow(QtWidgets.QMainWindow):
             'comment': comment,
             'current': current,
             'v_limit': v_limit,
+            'gate_v': gate_v,
             # todo: nplc
             'measure_time': measure_time
         }
