@@ -207,6 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
         start = self.dc_iv_start_current.value() * 1e-6
         stop = self.dc_iv_end_current.value() * 1e-6
         steps = int(self.dc_iv_steps.value())
+        # NPLC!!!!!!!!!!
         command = {
             'cmd': 'start_measurement',
             'measurement': 'dc_4_point',
@@ -226,6 +227,8 @@ class MainWindow(QtWidgets.QMainWindow):
         stop = self.differential_conductance_end_current.value() * 1e-6
         delta = self.differential_conductance_delta.value() * 1e-6
         steps = int(self.differential_conductance_steps.value())
+        nplc = float(self.nano_vm_nplc.currentText())
+
         command = {
             'cmd': 'start_measurement',
             'measurement': 'diff_conductance',
@@ -235,6 +238,7 @@ class MainWindow(QtWidgets.QMainWindow):
             'steps': steps,
             'delta': delta,
             'v_limit': v_limit,
+            'nplc': nplc,
         }
         print(command)
         self._write_socket(command, 8510)
