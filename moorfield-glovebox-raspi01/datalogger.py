@@ -87,9 +87,9 @@ class Logger():
         self.loggers = {}
 
         codenames = {
-            # 'moorfield_glovebox_01_o2_conc': 0.1,
-            # 'moorfield_glovebox_01_dewpoint': 0.5,
-            # 'moorfield_glovebox_01_pressure': 0.2,
+            'moorfield_glovebox_01_o2_conc': 0.3,
+            'moorfield_glovebox_01_dewpoint': 0.2,
+            'moorfield_glovebox_01_pressure': 0.2,
             'moorfield_glovebox_02_o2_conc': 0.1,
             'moorfield_glovebox_02_dewpoint': 0.1,
             'moorfield_glovebox_02_pressure': 0.2,
@@ -98,13 +98,12 @@ class Logger():
         # The keys are i2c adresses, the values are the the three parameters and the prefix
         # The parameteres has values that are lists of channel number, offset and scale
         adc_mapping = {
-            # 0x49: {
-            #     'o2_conc': ?,
-            #     'dewpoint': ?,
-            #     'pressure': ?,
-            #     'prefix':
-            #     'moorfield_glovebox_01'
-            # }
+            0x49: {
+                'o2_conc': [2, -24.295, 21.9747],
+                'dewpoint': [0, -124, 24],
+                'pressure': [1, -18.6066, 5.57247],
+                'prefix': 'moorfield_glovebox_01'
+            },
             0x48: {
                 'o2_conc': [0, -24.295, 21.9747],
                 'dewpoint': [1, -124, 24],
