@@ -25,15 +25,6 @@ class CryostatDCBase(CryostatMeasurementBase):
         self.masure_voltage_xy = MeasureVxy(self.xy_nanov)
         self.masure_voltage_total = MeasureVTotal(self.dmm)
 
-    def _configure_back_gate(self):
-        """
-        Confgire the 2400 for gating
-        """
-        self.back_gate.set_source_function('v')
-        self.back_gate.set_current_limit(1e-9)
-        self.back_gate.set_voltage(0)
-        self.back_gate.output_state(True)
-
     def _configure_dmm(self, v_limit):
         """
         Configure  Model 2000 used for 2-point measurement
@@ -43,6 +34,7 @@ class CryostatDCBase(CryostatMeasurementBase):
         self.dmm.configure_measurement_type('volt:dc')
         self.dmm.set_range(v_limit)
         self.dmm.set_integration_time(2)
+        self.dmm.set_trigger_source(external=True)
         # TODO: Replace the line below with a line that configures a trigger
         self.dmm.scpi_comm(':INIT:CONT ON')  # TODO: Add this to driver
 
@@ -66,6 +58,8 @@ class CryostatDCBase(CryostatMeasurementBase):
         self.xy_nanov.set_range(0, 0)
         self.current_source._2182a_comm(':SENSE:VOLTAGE:NPLCYCLES ' + str(nplc))
         self.xy_nanov.set_integration_time(nplc)
+        self.current_source._2182a_comm(':TRIGGER:SOURCE External')
+        self.xy_nanov.set_trigger_source(external=True)
 
     def _read_voltages(self, nplc, store_gate=True):
         # Prepare to listen for triggers
