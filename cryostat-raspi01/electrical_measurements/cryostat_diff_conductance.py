@@ -12,8 +12,8 @@ class CryostatDifferentialConductance(CryostatMeasurementBase):
         self.reset_current_measurement(None, error='Aborted')
 
     def differential_conductance_measurement(
-            self, comment, start: float, stop: float,
-            step: float, delta: float, **kwargs
+            self, comment, start: float, stop: float, steps: int,
+            delta: float, v_limit: float, nplc: float = 5, **kwargs
     ):
         """
         Perform a differential conductance measurement
@@ -33,13 +33,14 @@ class CryostatDifferentialConductance(CryostatMeasurementBase):
         self.dmm.set_trigger_source(external=True)
         self.dmm.set_range(1.9)
         # Be fast enough to resolve the speed of delta mode
-        self.dmm.set_integration_time(1)
+        self.dmm.set_integration_time(0.1)
 
         self._add_metadata(labels, 206, comment, timestep=0.2, delta_i=delta)
         self.reset_current_measurement('differential_conductance')
 
         self.current_source.perform_differential_conductance_measurement(
-            start=start, stop=stop, step=step, delta=delta
+            start=start, stop=stop, steps=steps, delta=delta,
+            v_limit=v_limit, nplc=nplc
         )
         self.current_source.read_diff_conduct_line()  # Discard first line
         err_count = 0
@@ -47,8 +48,11 @@ class CryostatDifferentialConductance(CryostatMeasurementBase):
             if self.current_measurement['type'] is None:
                 # Measurement has been aborted - do something!
                 break
-
+            t = time.time()
             row = self.current_source.read_diff_conduct_line()
+            print('Get row: {}'.format(time.time() - t))
+
+            t = time.time()
             if row:
                 data = {
                     'current': row['current'],
@@ -56,14 +60,20 @@ class CryostatDifferentialConductance(CryostatMeasurementBase):
                     'dv_di': row['reading'],
                 }
                 self.add_to_current_measurement(data)
+            print('Added row: {}'.format(time.time() - t))
 
-            if row.get('current', 0) >= (stop - step / 2.0):
+            # TODO! Find a better way to detect that the measurement has ended!
+            # Possibly by counting rows if we trust we get all of them
+            step_size = (stop - start) / steps
+            if row.get('current', 0) >= stop - step_size:
                 break
 
+            t = time.time()
             # This will fail due to lag of triggering at the very last row
             v_total = self.dmm.next_reading()
             data = {'v_total': v_total}
             self.add_to_current_measurement(data)
+            print('Read DMM: {}'.format(time.time() - t))
 
             # if (i > 15) and (len(data) < 5):
             if (i > 15) and (row is None):
