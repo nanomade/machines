@@ -13,36 +13,41 @@ class CryostatDeltaConstantCurrent(CryostatMeasurementBase):
         self.reset_current_measurement(None, error='Aborted')
 
     def delta_constant_current(
-            self, comment: str, current: float, v_limit: float = 1,
-            measure_time: float = None, **kwargs
+            self, comment: str, current: float, measure_time: float,
+            v_limit: float = 1, gate_v: float = None, **kwargs
     ):
         """
         Perform a simple constant-current measurement. This could be used as either
         a very simple test measurement, or to track perfomance as function of a
         non-electric parameter souch as temperature or magnetic field.
-        # TODO: Add option to set a static non-zero gate voltage
         :param comment: Comment for the measurement
         :param current: Probe current
         :param measure_time: The amount of time for the measurement to run
+        :param gate_v: Constant gate voltage during measurement
         :param **kwargs: Used to absorb extra args from network syntax
         """
-        # TODO!!! Take the comment as a parameter
         labels = {
             'v_total': 'Vtotal',
             'v_xx': 'Vxx',
             'b_field': 'B-Field',
             'sample_temp': 'Sample Temperature',
             'vti_temp': 'VTI Temperature',
-            # GATE!!!!!!!!!!!
         }
+        # TODO: Add v_limit as metadata
+        self._add_metadata(labels, 207, comment, current=current)
+        self.reset_current_measurement('delta_constant_current')
+
         self.dmm.set_trigger_source(external=True)
         self.dmm.set_range(v_limit)
         # Be fast enough to resolve the speed of delta mode
         self.dmm.set_integration_time(1)
 
-        # TODO: Add v_limit as metadata
-        self._add_metadata(labels, 207, comment, current=current)
-        self.reset_current_measurement('delta_constant_current')
+        # TODO: We cannot measure gate_v and current here, because it currently
+        # messes up with the trigger-mechanism of the differential conductance
+        # Consider to do a single measurement before and after main run
+        self._configure_back_gate()
+        if gate_v is not None:
+            self.back_gate.set_voltage(gate_v)
 
         # This should be handled by DMM in AC mode
         # two_wire_v = self.current_source.read_2182a_channel_2(current)
@@ -50,7 +55,8 @@ class CryostatDeltaConstantCurrent(CryostatMeasurementBase):
         # self.add_to_current_measurement(data)
 
         self.current_source.prepare_delta_measurement(current, v_limit)
-        time.sleep(1.0)
+        time.sleep(3.0)
+
         t_start = time.time()
         while (time.time() - t_start) < measure_time:
             self._read_cryostat()
@@ -67,8 +73,6 @@ class CryostatDeltaConstantCurrent(CryostatMeasurementBase):
             # todo: Keep track of measurements and do delta here as well
             v_total = abs(self.dmm.next_reading())
 
-            # todo: Measure gate current (when static gate V has been implemented)
-
             if self.current_measurement['type'] is None:
                 break
             data = {'v_xx': v_xx, 'v_total': v_total}
@@ -76,12 +80,16 @@ class CryostatDeltaConstantCurrent(CryostatMeasurementBase):
 
         # Indicate that the measurement is completed
         self.current_source.end_delta_measurement()
+        if gate_v is not None:
+            self.back_gate.set_voltage(0)
+
         time.sleep(5)
         self.reset_current_measurement(None)
 
     def test(self):
-        # self.instrument_id()
-        self.delta_constant_current('Test run', 1e-3, 600)
+        self.delta_constant_current(
+            'Test run', current=1e-6, measure_time=25, v_limit=0.95, gate_v=0.123456
+        )
 
 
 if __name__ == '__main__':
