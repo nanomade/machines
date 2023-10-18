@@ -5,9 +5,6 @@ import threading
 from PyExpLabSys.common.sockets import DataPushSocket
 from PyExpLabSys.common.sockets import DateDataPullSocket
 
-# from cryostat_measurement import CrystatMeasurement
-# Moving away from CryostatMeasurement and into importing modules directly
-
 from cryostat_4point_dc import Cryostat4PointDC
 from cryostat_delta_constant_current import CryostatDeltaConstantCurrent
 from cryostat_diff_conductance import CryostatDifferentialConductance
@@ -17,7 +14,6 @@ class CryostatController(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.quit = False
-        # self.cm = CrystatMeasurement()
         self.measurement = None
 
         self.pushsocket = DataPushSocket('cryostat', action='enqueue', port=8510)
