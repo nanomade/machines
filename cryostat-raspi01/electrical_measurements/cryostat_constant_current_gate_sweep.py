@@ -49,6 +49,7 @@ class CryostatConstantCurrentGateSweep(CryostatDCBase):
             'sample_temp': 'Sample temperature'
         }
         self._add_metadata(labels, 208, comment)
+        # TODO: Add v_limit as metadata
         labels = {'v_total': 'Vtotal'}
         self._add_metadata(labels, 208, comment, current=current)
         labels = {'v_xx': 'Vxx', 'v_xy': 'Vxy'}

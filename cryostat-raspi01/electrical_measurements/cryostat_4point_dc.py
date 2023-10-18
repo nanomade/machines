@@ -1,7 +1,5 @@
 import time
-import threading
 
-# from cryostat_measurement_base import CryostatMeasurementBase
 from cryostat_dc_base import CryostatDCBase
 
 
@@ -13,29 +11,44 @@ class Cryostat4PointDC(CryostatDCBase):
         print('ABORT')
         self.reset_current_measurement(None, error='Aborted')
 
-    def dc_4_point_measurement(self, comment, start: float, stop: float, steps: int, v_limit=1.0, **kwargs):
+    def dc_4_point_measurement(
+            self, comment, start: float, stop: float, steps: int,
+            v_limit: float = 1.0, nplc: float = 1, gate_v: float = None, **kwargs
+    ):
         """
         Perform a 4-point DC iv-measurement.
-        :param start: The lowest current in the sweep.
-        :param stop: The highest current in the sweep.
-        :steps: Number of steps in the sweep.
+        :param start: The lowest current in the sweep
+        :param stop: The highest current in the sweep
+        :param steps: Number of steps in sweep
+        :param nplc: Integration time of voltage measurements
+        :params gate_v: Optional gate voltage at which the sweep is performed
         :v_limit: Maximal allowed voltage, default is 1.0
         """
-        labels = {'v_total': 'Vtotal', 'v_xx': 'Vxx', 'v_xy': 'Vxy', 'current': 'Current',
-                  'b_field': 'B-Field', 'vti_temp': 'VTI Temperature', 'sample_temp': 'Sample temperature'}
-        self._add_metadata(labels, 201, comment, timestep=0.2)
+        labels = {
+            'v_total': 'Vtotal', 'current': 'Current', 'v_backgate': 'Gate voltage',
+            'i_backgate': 'Gate current', 'b_field': 'B-Field',
+            'vti_temp': 'VTI Temperature', 'sample_temp': 'Sample temperature'
+        }
+        self._add_metadata(labels, 201, comment)
+        labels = {'v_xx': 'Vxx', 'v_xy': 'Vxy'}
+        self._add_metadata(labels, 201, comment, nplc=nplc)
         self.reset_current_measurement('dc_sweep')
 
         # Configure instruments:
-        self._configure_back_gate()  # Misused to trigger 2182a's
-        self._configure_dmm(v_limit)
-        self._configure_source(v_limit=v_limit, current_range=stop)
-        self._configure_nano_voltmeters(5)  # todo: Configurable nplc
+        self._configure_back_gate()  # Also used to trigger 2182a's
+        if gate_v is not None:
+            self.back_gate.set_voltage(gate_v)
 
-        time.sleep(1)
+        self._configure_dmm(v_limit)  # SET DMM TO TAKE EXTERNAL TRIGGER
+        self._configure_source(v_limit=v_limit, current_range=stop)
+        self._configure_nano_voltmeters(nplc)  # SET NVM TO TAKE EXTERNAL TRIGGER
+
+        time.sleep(3)
         self.current_source.set_current(start)
 
+        iteration = 0
         for current in self._calculate_steps(start, stop, steps):
+            iteration += 1
             if self.current_measurement['type'] is None:
                 # Measurement has been aborted, skip through the
                 # rest of the steps
@@ -46,20 +59,13 @@ class Cryostat4PointDC(CryostatDCBase):
             if not self._check_I_source_status():
                 return
 
-            data = self._read_voltages(5, store_gate=False)
-            # # t = threading.Thread(target=self._ac_4_point_sweep,
-            # #                      args=(current_steps,))
-            # t_vxx = threading.Thread(target=self.masure_voltage_xx.start_measurement)
-            # t_vxx.start()
-            # t_vtotal = threading.Thread(target=self.masure_voltage_total.start_measurement)
-            # t_vtotal.start()
+            store_gate = False  # Store gate every 3 iterations if gate is used
+            if iteration % 3 == 0:
+                store_gate = (gate_v is not None)
 
-            # t = time.time()
-            # v_xx = self.masure_voltage_xx.read_voltage()
-            # v_total = self.masure_voltage_total.read_voltage()
-            # print('Measure time: {}'.format(time.time() - t))
+            data = self._read_voltages(nplc, store_gate=store_gate)
             data['current'] = current
-            # data = {'current': current, 'v_total': v_total, 'v_xx': v_xx}
+            print('Data: ', data)
             self.add_to_current_measurement(data)
             self._read_cryostat()
 
