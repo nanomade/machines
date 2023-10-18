@@ -150,6 +150,16 @@ class CryostatMeasurementBase(object):
         if None not in data.values():
             self.add_to_current_measurement(data)
 
+    def _configure_back_gate(self):
+        """
+        Configure the 2400 for gating. This instrument is used for gating in
+        many configuration, and thus lives in measurement base
+        """
+        self.back_gate.set_source_function('v')
+        self.back_gate.set_current_limit(1e-7)
+        self.back_gate.set_voltage(0)
+        self.back_gate.output_state(True)
+
     def instrument_id(self):
         found_all = self._identify_all_instruments()
         if not found_all:
