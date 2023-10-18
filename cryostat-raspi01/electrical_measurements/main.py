@@ -14,6 +14,12 @@ class CryostatController(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.quit = False
+
+        # TODO: self.measurement is sometimes None, sometimes a leftover from the latest
+        # measurement. Consider to init to CryostatMeasurementBase to alway have access
+        # to eg the back gate and the 2-point DMM.
+        # This will allow local control of instruments via sockets when measurements
+        # are not running.
         self.measurement = None
 
         self.pushsocket = DataPushSocket('cryostat', action='enqueue', port=8510)
@@ -83,6 +89,11 @@ class CryostatController(threading.Thread):
     def _handle_element(self, element):
         cmd = element.get('cmd')
         if cmd == 'start_measurement':
+            # This only works on first run - change into check for
+            # self.measurement.current_measurement['type']
+            if self.measurement is not None:
+                print('Measurement running, cannot start new')
+                return
             # if element.get('measurement') == 'ac_4_point':
             #     self.start_ac_4_point(**element)
             if element.get('measurement') == 'dc_4_point':
