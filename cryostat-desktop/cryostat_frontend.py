@@ -421,12 +421,15 @@ class MainWindow(QtWidgets.QMainWindow):
             v_xx = self._read_socket('v_xx', 9002)
             self.current_measurement_show.setText(measurement_type)
             if v_xx is not None:
-                # TODO: Could we differentiate plots according to measurement type?
-                self.measurement_plot_x.append(v_xx[0])
-                self.measurement_plot_y.append(v_xx[1])
+                if not None in v_xx:
+                    # TODO: Could we differentiate by measurement type?
+                    self.measurement_plot_x.append(v_xx[0])
+                    self.measurement_plot_y.append(v_xx[1])
+
         self.measurement_line.setData(
             self.measurement_plot_x, self.measurement_plot_y)
         self.latest_measurement_type = measurement_type
+
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
