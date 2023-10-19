@@ -39,12 +39,17 @@ class Cryostat4PointDC(CryostatDCBase):
         if gate_v is not None:
             self.back_gate.set_voltage(gate_v)
 
-        self._configure_dmm(v_limit)  # SET DMM TO TAKE EXTERNAL TRIGGER
+        self._configure_dmm(v_limit)
         self._configure_source(v_limit=v_limit, current_range=stop)
-        self._configure_nano_voltmeters(nplc)  # SET NVM TO TAKE EXTERNAL TRIGGER
+        self._configure_nano_voltmeters(nplc)
 
-        time.sleep(3)
+        time.sleep(2)
         self.current_source.set_current(start)
+        time.sleep(1)
+
+        # Activate a few triggers to ensure measurement gets started
+        for _ in range(0, 3):
+            self._read_voltages(nplc, store_gate=False)
 
         iteration = 0
         for current in self._calculate_steps(start, stop, steps):
