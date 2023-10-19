@@ -69,7 +69,7 @@ class CryostatConstantCurrentGateSweep(CryostatDCBase):
             return
 
         time.sleep(0.1)
-        self._read_gate()
+        self.read_gate()
 
         aborted = False
         for gate_v in self._calculate_steps(v_low, v_high, steps, repeats):
@@ -84,6 +84,7 @@ class CryostatConstantCurrentGateSweep(CryostatDCBase):
             time.sleep(0.001)  # TODO: Make the delay configurable
             data = self._read_voltages(nplc)
 
+            print('Data ', data)
             self.add_to_current_measurement(data)
             self._read_cryostat()
 

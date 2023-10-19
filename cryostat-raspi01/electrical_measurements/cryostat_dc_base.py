@@ -80,7 +80,7 @@ class CryostatDCBase(CryostatMeasurementBase):
         t_vtotal.start()
 
         # This will both read the gate and trigger the 2182a's
-        self._read_gate(store_data=store_gate)
+        self.read_gate(store_data=store_gate)
 
         # Read the measured result
         v_total = self.masure_voltage_total.read_voltage()

@@ -255,18 +255,18 @@ class CryostatMeasurementBase(object):
         # yield?
         return step_list
 
-    def _read_gate(self, store_data=True):
+    def read_gate(self, store_data=True):
         voltage = self.back_gate.read_voltage()
         if not store_data:
             # This is just misuse to start a trigger
-            return
+            return voltage
         current = self.back_gate.read_current()
         data = {
             'v_backgate': voltage,
             'i_backgate': current
         }
         self.add_to_current_measurement(data)
-        return current
+        return voltage
 
     def dummy_background_measurement(self):
         # This should be a simple measurement that runs
@@ -306,7 +306,7 @@ class CryostatMeasurementBase(object):
     #     self.back_gate.set_voltage(backgate_from)
     #     self.back_gate.output_state(True)
     #     time.sleep(0.1)
-    #     self._read_gate()
+    #     self.read_gate()
 
     #     gate_steps = self._calculate_steps(backgate_from, backgate_to, gate_steps)
 
@@ -318,7 +318,7 @@ class CryostatMeasurementBase(object):
     #             continue
     #         self.back_gate.set_voltage(gate_v)
     #         time.sleep(0.5)
-    #         self._read_gate()
+    #         self.read_gate()
 
     #         t = threading.Thread(target=self._ac_4_point_sweep,
     #                              args=(current_steps,))
@@ -332,8 +332,8 @@ class CryostatMeasurementBase(object):
     #             # we do it periodically while waiting for the sweep
     #             print('waiting')
     #             time.sleep(1)
-    #             self._read_gate()
-    #         self._read_gate()
+    #             self.read_gate()
+    #         self.read_gate()
 
     #     # TODO!! Handle the case of non-succes!
     #     # if self.current_measurement['error']:
