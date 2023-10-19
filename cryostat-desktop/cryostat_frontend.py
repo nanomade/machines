@@ -52,8 +52,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.abort_measurement_button.clicked.connect(self._abort_measurement)
 
         self.temperature_plot.setBackground('w')
+        self.temperature_plot.setLabel(axis='left', text='Temperature / C')
+        self.temperature_plot.setLabel(axis='bottom', text='Time')
+
         self.b_field_plot.setBackground('w')
+        self.b_field_plot.setLabel(axis='left', text='B-Field / T')
+        self.b_field_plot.setLabel(axis='bottom', text='Time')
+
         self.status_plot.setBackground('w')
+        # This axis might be updated by individual measurements
+        self.status_plot.setLabel(axis='left', text='Voltage')
+        self.status_plot.setLabel(axis='bottom', text='Time')
 
         self.vti_temp_x = []
         self.vti_temp_y = []
@@ -409,7 +418,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     if self.measurement_plot_x[-1] > v_xx[0]:
                         self.measurement_plot_x = []
                         self.measurement_plot_y = []
-
+                # TODO: Could we differentiate plots according to measurement type?
                 self.measurement_plot_x.append(v_xx[0])
                 self.measurement_plot_y.append(v_xx[1])
         self.measurement_line.setData(
