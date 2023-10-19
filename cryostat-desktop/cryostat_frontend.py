@@ -27,6 +27,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.read_socket.setblocking(0)
         self.read_socket_in_use = False
 
+        self.latest_measurement_type = None
         self.t_start = time.time()
         uic.loadUi('cryostat_frontend.ui', self)
         # I am not sure how to set this default in QTDesigner...
@@ -403,27 +404,29 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Read status of ongoing measurement
         status = self._read_socket('status', 9002)
-        v_xx = self._read_socket('v_xx', 9002)
             
         measurement_type = status['type']
         print(measurement_type)
-        if measurement_type is None:
-            self.current_measurement_show.setText('No measurement')
+        if not measurement_type == self.latest_measurement_type:
             self.measurement_plot_x = []
             self.measurement_plot_y = []
+
+        if measurement_type is None:
+            # v_tot is just a value, not a (time, value) point
+            v_tot = self._read_socket('v_tot', 9002)
+            self.measurement_plot_x.append(time.time() - self.t_start)
+            self.measurement_plot_y.append(v_tot)
+            self.current_measurement_show.setText('No measurement')
         else:
+            v_xx = self._read_socket('v_xx', 9002)
             self.current_measurement_show.setText(measurement_type)
             if v_xx is not None:
-                if self.measurement_plot_x:
-                    if self.measurement_plot_x[-1] > v_xx[0]:
-                        self.measurement_plot_x = []
-                        self.measurement_plot_y = []
                 # TODO: Could we differentiate plots according to measurement type?
                 self.measurement_plot_x.append(v_xx[0])
                 self.measurement_plot_y.append(v_xx[1])
         self.measurement_line.setData(
             self.measurement_plot_x, self.measurement_plot_y)
-
+        self.latest_measurement_type = measurement_type
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
