@@ -1,32 +1,29 @@
 import time
-import json
 import threading
 
 from PyExpLabSys.common.sockets import DataPushSocket
 from PyExpLabSys.common.sockets import DateDataPullSocket
+
+from cryostat_measurement_base import CryostatMeasurementBase
 
 from cryostat_4point_dc import Cryostat4PointDC
 from cryostat_delta_constant_current import CryostatDeltaConstantCurrent
 from cryostat_diff_conductance import CryostatDifferentialConductance
 from cryostat_constant_current_gate_sweep import CryostatConstantCurrentGateSweep
 
+
 class CryostatController(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.quit = False
 
-        # TODO: self.measurement is sometimes None, sometimes a leftover from the latest
-        # measurement. Consider to init to CryostatMeasurementBase to alway have access
-        # to eg the back gate and the 2-point DMM.
-        # This will allow local control of instruments via sockets when measurements
-        # are not running.
-        self.measurement = None
+        self.measurement = CryostatMeasurementBase()
 
         self.pushsocket = DataPushSocket('cryostat', action='enqueue', port=8510)
         self.pushsocket.start()
 
         self.pullsocket = DateDataPullSocket(
-            'cryostat', ['status', 'v_xx'], timeouts=[999999, 3], port=9002
+            'cryostat', ['status', 'v_xx', 'v_tot'], timeouts=[999999, 3, 3], port=9002
         )
         self.pullsocket.start()
 
@@ -90,8 +87,7 @@ class CryostatController(threading.Thread):
         cmd = element.get('cmd')
         if cmd == 'start_measurement':
             # This only works on first run - change into check for
-            # self.measurement.current_measurement['type']
-            if self.measurement is not None:
+            if self.measurement.current_measurement['type'] is not None:
                 print('Measurement running, cannot start new')
                 return
             # if element.get('measurement') == 'ac_4_point':
@@ -128,22 +124,27 @@ class CryostatController(threading.Thread):
                 qsize = self.pushsocket.queue.qsize()
                 self._handle_element(element)
 
-            status = {'type': None, 'start_time': None}
-                
-            if self.measurement is not None:
+            # Do not feed socket with old data, update v_xx only if a measurement
+            # is running
+            if self.measurement.current_measurement['type'] is not None:
                 if len(self.measurement.current_measurement['v_xx']) > 2:
                     self.pullsocket.set_point_now(
                         'v_xx',
                         self.measurement.current_measurement['v_xx'][-1]
                     )
-
-                status = {
-                    'type': self.measurement.current_measurement['type'],
-                    'start_time': self.measurement.current_measurement['start_time'],
-                }
-
-                    
+            status = {
+                'type': self.measurement.current_measurement['type'],
+                'start_time': self.measurement.current_measurement['start_time'],
+            }
             self.pullsocket.set_point_now('status', status)
+
+            if self.measurement.current_measurement['type'] is None:
+                # gate_v = self.measurement.read_gate(store_data=False)
+                # print(gate_v)
+                self.measurement.dmm.set_trigger_source(external=False)
+                self.measurement.dmm.set_range(0)
+                voltage = self.measurement.dmm.next_reading()
+                self.pullsocket.set_point_now('v_tot', voltage)
 
 
 def main():
