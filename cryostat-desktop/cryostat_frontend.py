@@ -32,13 +32,16 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi('cryostat_frontend.ui', self)
         # I am not sure how to set this default in QTDesigner...
         self.nano_vm_nplc.setCurrentText('5')
-        
+
         self.vti_temp_setpoint.valueChanged.connect(self._update_vti_temp)
         self.sample_temp_setpoint.valueChanged.connect(self._update_sample_temp)
         self.b_field_setpoint.valueChanged.connect(self._update_b_field)
 
         self.activate_ramp_button.clicked.connect(self._activate_ramp)
         self.stop_ramp_button.clicked.connect(self._stop_ramp)
+
+        self.set_manual_gate_button.clicked.connect(self._set_manual_gate)
+        self.toggle_k6221_button.clicked.connect(self._toggle_k6221)
 
         # Connect to buttons
         self.start_4p_dc_gate_sweep_button.clicked.connect(
@@ -74,7 +77,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.measurement_plot_x = []
         self.measurement_plot_y = []
-        
+
         self.ramp_start = 0
         self.ramp = None
 
@@ -108,7 +111,7 @@ class MainWindow(QtWidgets.QMainWindow):
         box.setText(msg)
         box.setWindowTitle(msg)
         box.exec_()
-        
+
     def _read_field(self, x, y):
         """
         Read a specific field in the ramp table.
@@ -177,10 +180,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self._write_socket(command)
         # todo: Check reply that command is acknowledged
 
-    def _abort_measurement(self):
+    def _toggle_k6221(self):
+        command = {'cmd': 'toggle_6221'}
+        self._write_socket(command, 8510)
+
+    def _set_manual_gate(self):
         command = {
-            'cmd': 'abort',
+            'cmd': 'set_manual_gate',
+            'gate_voltage': self.manual_gate_voltage.value(),
+            'gate_current_limit': self.manual_gate_current_limit.value() * 1e-6,
         }
+        print(command)
+        # self._write_socket(command, 8510)
+
+    def _abort_measurement(self):
+        command = {'cmd': 'abort'}
         self._write_socket(command, 8510)
 
     def _start_4p_dc_gate_sweep(self):
@@ -189,7 +203,7 @@ class MainWindow(QtWidgets.QMainWindow):
         v_limit = self.current_source_max_voltage.value()
         v_low = self.cc_dc_gate_sweep_v_low.value()
         v_high = self.cc_dc_gate_sweep_v_high.value()
-        steps =  int(self.cc_dc_gate_sweep_steps.value())
+        steps = int(self.cc_dc_gate_sweep_steps.value())
         repeats = int(self.cc_dc_gate_sweep_repeats.value())
         nplc = float(self.nano_vm_nplc.currentText())
         if len(comment) < 5:
@@ -223,7 +237,7 @@ class MainWindow(QtWidgets.QMainWindow):
             'cmd': 'start_measurement',
             'measurement': 'dc_4_point',
             'comment': comment,
-            'start': start, 
+            'start': start,
             'stop': stop,
             'steps': steps,
             'v_limit': v_limit,
@@ -247,7 +261,7 @@ class MainWindow(QtWidgets.QMainWindow):
             'cmd': 'start_measurement',
             'measurement': 'diff_conductance',
             'comment': comment,
-            'start': start, 
+            'start': start,
             'stop': stop,
             'steps': steps,
             'delta': delta,
@@ -257,7 +271,7 @@ class MainWindow(QtWidgets.QMainWindow):
         }
         print(command)
         self._write_socket(command, 8510)
-        
+
     def _start_delta_constant_current(self):
         comment = self.measurement_comment.text()
         current = self.constant_current_delta_current.value() * 1e-6
@@ -279,8 +293,8 @@ class MainWindow(QtWidgets.QMainWindow):
             'measure_time': measure_time
         }
         print(command)
-        self._write_socket(command, 8510)        
-        
+        self._write_socket(command, 8510)
+
     def _update_vti_temp(self):
         setpoint = self.vti_temp_setpoint.value()
         self._update_via_socket('vti_temperature_setpoint', setpoint)
@@ -348,42 +362,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 if ramp_time_sum + dt < current_ramp_time:
                     ramp_time_sum += dt
                     ramp_line += 1
-
-        vti_temp = self._read_socket('cryostat_vti_temperature')
-        sample_temp = self._read_socket('cryostat_sample_temperature')
-        b_field = self._read_socket('cryostat_magnetic_field')
-        if vti_temp is None or b_field is None:
-            return
-        self.sample_temp_show.setText('{:.2f}K'.format(sample_temp))
-        self.vti_temp_show.setText('{:.2f}K'.format(vti_temp))
-        self.b_field_show.setText('{:.6f}T'.format(b_field))
-
-        self.vti_temp_x.append(time.time() - self.t_start)
-        self.vti_temp_y.append(vti_temp)
-        self.sample_temp_x.append(time.time() - self.t_start)
-        self.sample_temp_y.append(sample_temp)
-
-        self.b_field_x.append(time.time() - self.t_start)
-        self.b_field_y.append(b_field)
-        self.vti_temp_line.setData(self.vti_temp_x, self.vti_temp_y)
-        self.sample_temp_line.setData(self.sample_temp_x, self.sample_temp_y)
-        self.b_field_line.setData(self.b_field_x, self.b_field_y)
-        return
-
-    def update_plot_data(self):
-        if self.ramp_start > 0:
-            current_ramp_time = time.time() - self.ramp_start
-            msg = '{:.1f}s ({:.2f}min)'
-            self.ramp_time_show.setText(
-                msg.format(current_ramp_time, current_ramp_time/60.0)
-            )
-            ramp_time_sum = 0
-            ramp_line = 0
-            for row in self.ramp:
-                dt = row['dt'] * 60
-                if ramp_time_sum + dt < current_ramp_time:
-                    ramp_time_sum += dt
-                    ramp_line += 1
                 else:
                     break
             if not row['temp'] == self.sample_temp_setpoint.value():
@@ -404,7 +382,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Read status of ongoing measurement
         status = self._read_socket('status', 9002)
-            
+
         measurement_type = status['type']
         print(measurement_type)
         if not measurement_type == self.latest_measurement_type:
@@ -421,7 +399,7 @@ class MainWindow(QtWidgets.QMainWindow):
             v_xx = self._read_socket('v_xx', 9002)
             self.current_measurement_show.setText(measurement_type)
             if v_xx is not None:
-                if not None in v_xx:
+                if None not in v_xx:
                     # TODO: Could we differentiate by measurement type?
                     self.measurement_plot_x.append(v_xx[0])
                     self.measurement_plot_y.append(v_xx[1])
