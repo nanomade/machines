@@ -191,7 +191,7 @@ class MainWindow(QtWidgets.QMainWindow):
             'gate_current_limit': self.manual_gate_current_limit.value() * 1e-6,
         }
         print(command)
-        # self._write_socket(command, 8510)
+        self._write_socket(command, 8510)
 
     def _abort_measurement(self):
         command = {'cmd': 'abort'}
