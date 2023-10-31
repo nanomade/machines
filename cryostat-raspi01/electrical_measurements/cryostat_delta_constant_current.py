@@ -37,6 +37,8 @@ class CryostatDeltaConstantCurrent(CryostatMeasurementBase):
         self._add_metadata(labels, 207, comment, current=current)
         self.reset_current_measurement('delta_constant_current')
 
+        # Allow the main loop to release DMM
+        time.sleep(1)
         self.dmm.set_trigger_source(external=True)
         self.dmm.set_range(v_limit)
         # Be fast enough to resolve the speed of delta mode

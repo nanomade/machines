@@ -31,7 +31,8 @@ class CryostatDifferentialConductance(CryostatMeasurementBase):
         self._add_metadata(labels, 206, comment, nplc=nplc, delta_i=delta)
         self.reset_current_measurement('differential_conductance')
 
-        # Configure dmm
+        # Allow the main loop to release DMM
+        time.sleep(1)
         self.dmm.set_trigger_source(external=True)
         self.dmm.set_range(1.9)
         # Be fast enough to resolve the speed of delta mode
