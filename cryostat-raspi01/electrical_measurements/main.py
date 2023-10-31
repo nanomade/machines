@@ -102,8 +102,22 @@ class CryostatController(threading.Thread):
                 self.start_constant_current_gate_sweep(**element)
 
         elif cmd == 'abort':
-            if self.measurement is not None:
+            if self.measurement.current_measurement['type'] is None:
                 self.measurement.abort_measurement()
+
+        elif cmd == 'set_manual_gate':
+            if self.measurement.current_measurement['type'] is None:
+                voltage = element.get('gate_voltage', 0)
+                current_limit = element.get('gate_current_limit', 1e-8)
+                self.measurement.back_gate.set_source_function('v')
+                self.measurement.back_gate.set_current_limit(current_limit)
+                self.measurement.back_gate.set_voltage(voltage)
+                self.measurement.back_gate.output_state(True)
+
+        elif cmd == 'toggle_6221':
+            if self.measurement.current_measurement['type'] is None:
+                state = self.measurement.current_source.output_state()
+                self.measurement.current_source.output_state(not state)
 
         elif cmd == 'lock_in_frequency':
             freq = element.get('frequency')
