@@ -3,7 +3,7 @@ import numpy as np
 from ps_dc_base import ProbeStationDCBase
 
 
-class ProbeStation4PointDC(ProbeStationDCBase):
+class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
     def __init__(self):
         # super().__init__(self=self)
         super().__init__()
