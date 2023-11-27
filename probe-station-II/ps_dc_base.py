@@ -25,9 +25,11 @@ class ProbeStationDCBase(ProbeStationMeasurementBase):
         Configure the 2450 for gating.
         """
         self.back_gate.clear_buffer('gate_data')
-        self.back_gate.set_source_function('v', source_range=source_range)
-        self.back_gate.set_sense_function('i', sense_range=current_limit)
+        self.back_gate.set_source_function(function='v', source_range=source_range)
+        # Temporarily set sense to auto to avoid temporary range conflicts
+        self.back_gate.set_sense_function(function='i', sense_range=0)
         self.back_gate.set_current_limit(current_limit)
+        self.back_gate.set_sense_function(function='i', sense_range=current_limit)
         self.back_gate.set_voltage(0)
         self.back_gate.output_state(True)
 
@@ -37,8 +39,10 @@ class ProbeStationDCBase(ProbeStationMeasurementBase):
         """
         self.source.clear_buffer('iv_data')
         self.source.set_source_function('v', source_range=source_range)
-        self.source.set_sense_function('i', sense_range=current_limit)
+        # Temporarily set sense to auto to avoid temporary range conflicts
+        self.source.set_sense_function('i', sense_range=0)
         self.source.set_current_limit(current_limit)
+        self.source.set_sense_function('i', sense_range=current_limit)
         self.source.set_voltage(0)
         self.source.output_state(True)
 
