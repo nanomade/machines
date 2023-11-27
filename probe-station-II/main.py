@@ -4,7 +4,7 @@ import threading
 from PyExpLabSys.common.sockets import DataPushSocket
 from PyExpLabSys.common.sockets import DateDataPullSocket
 
-from ps_measurement_base import CryostatMeasurementBase
+from ps_measurement_base import ProbeStationMeasurementBase
 
 from ps_double_stepped_4point_dc import ProbeStation4PointDoubleStepped
 
@@ -14,7 +14,7 @@ class ProbeStationController(threading.Thread):
         threading.Thread.__init__(self)
         self.quit = False
 
-        self.measurement = CryostatMeasurementBase()
+        self.measurement = ProbeStationMeasurementBase()
 
         self.pushsocket = DataPushSocket('probe_station', action='enqueue', port=8510)
         self.pushsocket.start()
@@ -102,7 +102,8 @@ class ProbeStationController(threading.Thread):
                 # print(gate_v)
                 self.measurement.dmm.set_trigger_source(external=False)
                 self.measurement.dmm.set_range(0)
-                voltage = self.measurement.dmm.next_reading()
+                # voltage = self.measurement.dmm.next_reading()
+                voltage = self.measurement.dmm.read_dc_voltage()
                 self.pullsocket.set_point_now('v_tot', voltage)
 
 
