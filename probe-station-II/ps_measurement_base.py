@@ -150,7 +150,11 @@ class ProbeStationMeasurementBase(object):
         source_ok = True
         return source_ok
 
-    def _calculate_steps(self, start, stop, steps, step_type='linear'):
+    def _calculate_steps(self, start, stop, steps, step_type='linear', **kwargs):
+        """
+        Calculate a set of steps.
+        **kwargs is used to eat extra arguments from the network syntax
+        """
         delta_current = stop - start
         step_size = delta_current / (steps - 1)
         step_list = []
