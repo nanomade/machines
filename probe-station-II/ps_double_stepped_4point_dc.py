@@ -7,11 +7,13 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
     def __init__(self):
         # super().__init__(self=self)
         super().__init__()
+        self.aborted = False
         time.sleep(0.2)
 
     def abort_measurement(self):
         print('ABORT')
-        self.reset_current_measurement(None, error='Aborted')
+        self.aborted = True
+        self.reset_current_measurement('aborting', error='Aborted')
 
     def _setup_data_log(self, comment, nplc=0):
         # TODO: Add NPLC to Vtotal
@@ -40,13 +42,17 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
         self._configure_source(source_range=source_range, current_limit=source['limit'])
         print('Configure done')
 
-    def _ramp_gate(self, v_from, v_to, rate=0.1):
+    def _ramp_gate(self, v_from, v_to, rate=0.1, force_even_if_abort=False):
         # Rate is the allowed gate-sweep rate in V/s
+        # todo: strongly consider to move this up to dc_base
         sign = np.sign(v_to - v_from)
         step_size = 0.05
 
         ramp_list = list(np.arange(v_from, v_to, 0.05 * sign)) + [v_to]
         for gate_ramp_v in ramp_list:
+            if (self.current_measurement['type'] == 'aborting') and (not force_even_if_abort):
+                print('Measurement aborted - stop gate ramp')
+                break
             print('Ramping gate to {}'.format(gate_ramp_v))
             self.back_gate.set_voltage(gate_ramp_v)
             self.read_gate()
@@ -68,10 +74,7 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
         self._setup_data_log(comment=comment)
         self._configure_instruments(source=source, gate=gate)
 
-        # Ramp to the first gate voltage:
-        self._ramp_gate(v_from=0, v_to=gate['start'])
-
-        # Now, we are ready to perform acutal sweeps
+        # Calculate the sweeps
         gate_steps = self._calculate_steps(gate['start'], gate['stop'], gate['steps'])
         source_steps = self._calculate_steps(
             source['start'], source['stop'], source['steps']
@@ -92,14 +95,17 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
         print('Inner steps are: ', inner_steps)
         print('Outer steps are: ', outer_steps)
 
+        # Ramp to the first gate voltage:
+        self._ramp_gate(v_from=0, v_to=gate['start'])
+
         for outer_v in outer_steps:
-            if self.current_measurement['type'] is None:
+            if self.current_measurement['type'] == 'aborting':
                 continue
             outer_inst.set_voltage(outer_v)
             print('Set outer to: {}'.format(outer_v))
 
             for inner_v in inner_steps:
-                if self.current_measurement['type'] is None:
+                if self.current_measurement['type'] == 'aborting':
                     # Measurement has been aborted, skip through the
                     # rest of the steps
                     continue
@@ -115,10 +121,20 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
 
         time.sleep(2)
 
-        # Ramp gate back to zero
-        self._ramp_gate(v_from=gate['stop'], v_to=0)
+        if not self.aborted:
+            # Ramp gate back to zero
+            self._ramp_gate(v_from=gate['stop'], v_to=0)
+            self.reset_current_measurement(None)
+        else:
+            print('Ramp gate back to zero')
+            self.back_gate.trigger_measurement('gate_data')
+            reading = self.back_gate.read_latest('gate_data')
+            v_from = reading['source_value']
+            self._ramp_gate(v_from=v_from, v_to=0, force_even_if_abort=True)
+            self.reset_current_measurement(None, error='Aborted')
 
         # Indicate that the measurement is completed
+        self.aborted = False
         self.back_gate.output_state(False)
         self.source.output_state(False)
         self.reset_current_measurement(None)
