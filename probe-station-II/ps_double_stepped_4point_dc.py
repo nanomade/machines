@@ -50,7 +50,9 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
 
         ramp_list = list(np.arange(v_from, v_to, 0.05 * sign)) + [v_to]
         for gate_ramp_v in ramp_list:
-            if (self.current_measurement['type'] == 'aborting') and (not force_even_if_abort):
+            if (self.current_measurement['type'] == 'aborting') and (
+                not force_even_if_abort
+            ):
                 print('Measurement aborted - stop gate ramp')
                 break
             print('Ramping gate to {}'.format(gate_ramp_v))
