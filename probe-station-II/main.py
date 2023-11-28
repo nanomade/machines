@@ -48,7 +48,7 @@ class ProbeStationController(threading.Thread):
                 self.start_4point_double_stepped(**element)
 
         elif cmd == 'abort':
-            if self.measurement.current_measurement['type'] is None:
+            if self.measurement.current_measurement['type'] is not None:
                 self.measurement.abort_measurement()
 
         elif cmd == 'set_manual_gate':
