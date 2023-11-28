@@ -77,10 +77,8 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
         self._configure_instruments(source=source, gate=gate)
 
         # Calculate the sweeps
-        gate_steps = self._calculate_steps(gate['start'], gate['stop'], gate['steps'])
-        source_steps = self._calculate_steps(
-            source['start'], source['stop'], source['steps']
-        )
+        gate_steps = self._calculate_steps(**gate)
+        source_steps = self._calculate_steps(**source)
 
         assert inner.lower() in ('source', 'gate')
         if inner.lower() == 'source':
@@ -148,8 +146,20 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
             inner='source',  # outer will be gate
             # inner='gate',  # ourter will be source
             # NPLC?
-            source={'start': -0.2, 'stop': 0.2, 'steps': 50, 'limit': 2e-3},
-            gate={'start': -5.0, 'stop': 5.0, 'steps': 3, 'limit': 1e-7},
+            source={
+                'start': -0.2,
+                'stop': 0.2,
+                'steps': 50,
+                'limit': 2e-3,
+                'step_type': 'linear',
+            },
+            gate={
+                'start': -5.0,
+                'stop': 5.0,
+                'steps': 3,
+                'limit': 1e-7,
+                'step_type': 'linear',
+            },
         )
 
 
