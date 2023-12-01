@@ -88,7 +88,9 @@ class ProbeStationMeasurementBase(object):
             value = None
         return value
 
-    def reset_current_measurement(self, measurement_type, error=False, keep_measuring=False):
+    def reset_current_measurement(
+        self, measurement_type, error=False, keep_measuring=False
+    ):
         """
         Reset current data if a new measurement is about to start.
         If measurement_type is None, this indicates that the measurement
@@ -153,7 +155,7 @@ class ProbeStationMeasurementBase(object):
         # _read_source, and stop the measurement if appropriate
 
         # :OUTPut[1]:INTerlock:TRIPped?
-        
+
         source_ok = True
         return source_ok
 
