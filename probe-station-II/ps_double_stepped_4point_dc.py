@@ -13,7 +13,7 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
     def abort_measurement(self):
         print('ABORT')
         self.aborted = True
-        self.reset_current_measurement('aborting', error='Aborted')
+        self.reset_current_measurement('aborting', error='Aborted', keep_measuring=True)
 
     def _setup_data_log(self, comment, nplc=0):
         # TODO: Add NPLC to Vtotal
@@ -42,13 +42,13 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
         self._configure_source(source_range=source_range, current_limit=source['limit'])
         print('Configure done')
 
-    def _ramp_gate(self, v_from, v_to, rate=0.1, force_even_if_abort=False):
+    def _ramp_gate(self, v_from, v_to, rate=0.5, force_even_if_abort=False):
         # Rate is the allowed gate-sweep rate in V/s
         # todo: strongly consider to move this up to dc_base
         sign = np.sign(v_to - v_from)
-        step_size = 0.05
+        step_size = 0.025
 
-        ramp_list = list(np.arange(v_from, v_to, 0.05 * sign)) + [v_to]
+        ramp_list = list(np.arange(v_from, v_to, step_size * sign)) + [v_to]
         for gate_ramp_v in ramp_list:
             if (self.current_measurement['type'] == 'aborting') and (
                 not force_even_if_abort
@@ -86,6 +86,8 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
             outer_steps = gate_steps
             inner_inst = self.source
             outer_inst = self.back_gate
+            # TODO: override set_voltage into ramp, should be implented
+            # at the point where the instruments are assigned (in measurement_base)
         else:
             inner_steps = gate_steps
             outer_steps = source_steps

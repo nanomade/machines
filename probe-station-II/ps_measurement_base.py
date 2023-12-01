@@ -88,7 +88,7 @@ class ProbeStationMeasurementBase(object):
             value = None
         return value
 
-    def reset_current_measurement(self, measurement_type, error=False):
+    def reset_current_measurement(self, measurement_type, error=False, keep_measuring=False):
         """
         Reset current data if a new measurement is about to start.
         If measurement_type is None, this indicates that the measurement
@@ -101,13 +101,17 @@ class ProbeStationMeasurementBase(object):
             for key, value in self.current_measurement.items():
                 if isinstance(value, list):
                     self.current_measurement[key].clear()
-            self.current_measurement.update(
-                {
-                    'type': measurement_type,
-                    'start_time': time.time(),
-                    'current_time': time.time(),
-                }
-            )
+            if not keep_measuring:
+                self.current_measurement.update(
+                    {
+                        'type': measurement_type,
+                        'start_time': time.time(),
+                        'current_time': time.time(),
+                    }
+                )
+            else:
+                self.current_measurement.update({'type': measurement_type})
+
         return True
 
     def add_to_current_measurement(self, data_point: dict):
@@ -147,6 +151,9 @@ class ProbeStationMeasurementBase(object):
         """
         # Here we should check variables as set by _read_gate() and
         # _read_source, and stop the measurement if appropriate
+
+        # :OUTPut[1]:INTerlock:TRIPped?
+        
         source_ok = True
         return source_ok
 
