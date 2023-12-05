@@ -42,9 +42,9 @@ class ProbeStation4PointDC(ProbeStationDCBase):
             'v_backgate': 'Gate voltage',
             'i_backgate': 'Gate current',
         }
-        self._add_metadata(labels, 201, comment)
+        self._add_metadata(labels, 301, comment)
         labels = {'v_xx': 'Vxx'}  # Vxy is not currently supported
-        self._add_metadata(labels, 201, comment, nplc=nplc)
+        self._add_metadata(labels, 301, comment, nplc=nplc)
         self.reset_current_measurement('dc_sweep')
 
         # Configure instruments:
