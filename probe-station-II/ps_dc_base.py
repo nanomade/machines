@@ -31,6 +31,10 @@ class ProbeStationDCBase(ProbeStationMeasurementBase):
         self.back_gate.set_sense_function(function='i', sense_range=0)
         self.back_gate.set_current_limit(current_limit)
         self.back_gate.set_sense_function(function='i', sense_range=current_limit)
+
+        # Always use 2-point measurement for the gate
+        self.back_gate.remote_sense(False)
+
         self.back_gate.set_integration_time(nplc)
         self.back_gate.set_voltage(0)
         self.back_gate.output_state(True)
@@ -40,7 +44,7 @@ class ProbeStationDCBase(ProbeStationMeasurementBase):
         self.back_gate.set_auto_zero('i', True)
         self.back_gate.auto_zero_now()
 
-    def _configure_source(self, source_range, current_limit, nplc):
+    def _configure_source(self, source_range, current_limit, nplc, remote_sense=False):
         """
         Configure souce-drain as a voltage source
         """
@@ -51,6 +55,9 @@ class ProbeStationDCBase(ProbeStationMeasurementBase):
         self.source.set_current_limit(current_limit)
         self.source.set_sense_function('i', sense_range=current_limit)
         self.source.set_integration_time(nplc)
+
+        self.back_gate.remote_sense(remote_sense)
+
         self.source.set_voltage(0)
         self.source.output_state(True)
 
