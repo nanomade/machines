@@ -3,7 +3,7 @@ import numpy as np
 from ps_dc_base import ProbeStationDCBase
 
 
-class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
+class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
     def __init__(self):
         # super().__init__(self=self)
         super().__init__()
@@ -15,31 +15,37 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
         self.aborted = True
         self.reset_current_measurement('aborting', error='Aborted', keep_measuring=True)
 
-    def _setup_data_log(self, comment, nplc=0):
-        # TODO: Add NPLC to Vtotal
-        # NPLC IS NOT CORRECT!!!!!!!!!!!!!!!
-        labels = {
-            'v_total': 'Vtotal',
-            'current': 'Current',
-            'v_backgate': 'Gate voltage',
-            'i_backgate': 'Gate current',
-        }
-        self._add_metadata(labels, 201, comment)
-        labels = {'v_xx': 'Vxx'}  # Vxy is not currently supported
-        self._add_metadata(labels, 201, comment, nplc=nplc)
+    def _setup_data_log(self, comment, source, gate):
+        labels = {'v_backgate': 'Gate voltage'}
+        self._add_metadata(labels, 303, comment, nplc=gate['nplc'])
+        labels = {'i_backgate': 'Gate current'}
+        self._add_metadata(labels, 303, comment, nplc=gate['nplc'], limit=gate['limit'])
+
+        labels = {'v_xx': 'Vxx'}
+        self._add_metadata(labels, 303, comment, nplc=source['nplc'])
+        labels = {'current': 'Current'}
+        self._add_metadata(
+            labels, 303, comment, nplc=source['nplc'], limit=source['limit']
+        )
         self.reset_current_measurement('dc_sweep')
 
     def _configure_instruments(self, source, gate):
         # Configure instruments:
         print('Configure Back gate')
         gate_range = max(abs(gate['start']), abs(gate['stop']))
-        self._configure_back_gate(source_range=gate_range, current_limit=gate['limit'])
+        self._configure_back_gate(
+            source_range=gate_range, current_limit=gate['limit'], nplc=gate['nplc']
+        )
 
+        # TODO!!! CONFIGURE Vxx as 2-point!!!!
         source_range = max(abs(source['start']), abs(source['stop']))
-        print('Configure DMM')
-        self._configure_dmm(v_limit=source_range)
         print('Configure Source')
-        self._configure_source(source_range=source_range, current_limit=source['limit'])
+        self._configure_source(
+            source_range=source_range,
+            current_limit=source['limit'],
+            nplc=source['nplc'],
+            remote_sense=False,
+        )
         print('Configure done')
 
     def _ramp_gate(self, v_from, v_to, rate=0.5, force_even_if_abort=False):
@@ -58,22 +64,16 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
             print('Ramping gate to {}'.format(gate_ramp_v))
             self.back_gate.set_voltage(gate_ramp_v)
             self.read_gate()
-            self.read_source()
+            self.read_source(read_dmm=False)
             time.sleep(step_size / rate)
 
-    def dc_4_point_measurement(
+    def dc_2_point_measurement_v_source(
         self, comment, inner: str, source: dict, gate: dict, **kwargs
     ):
         """
-        Perform a 4-point DC vi-measurement.
-        :param start: The lowest voltage in the sweep
-        :param stop: The highest voltage in the sweep
-        :param steps: Number of steps in sweep
-        :param nplc: Integration time of  measurements
-        :params gate_v: Optional gate voltage at which the sweep is performed
-        :v_limit: Maximal allowed voltage, default is 1.0
+        Perform a 2-point DC vi-measurement.
         """
-        self._setup_data_log(comment=comment)
+        self._setup_data_log(comment=comment, source=source, gate=gate)
         self._configure_instruments(source=source, gate=gate)
 
         # Calculate the sweeps
@@ -118,7 +118,8 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
                     # TODO!!! This always returns True!!!!
                     return
 
-                self.read_source()  # Also reads 2-point via the DMM
+                # This is a 2-wire measurement, no need for DMM
+                self.read_source(read_dmm=False)
                 self.read_gate()
 
         time.sleep(2)
@@ -152,13 +153,16 @@ class ProbeStation4PointDoubleStepped(ProbeStationDCBase):
                 'start': -0.2,
                 'stop': 0.2,
                 'steps': 50,
+                'nplc': 5,
                 'limit': 2e-3,
+                'nplc': 1,
                 'step_type': 'linear',
             },
             gate={
                 'start': -5.0,
                 'stop': 5.0,
                 'steps': 3,
+                'nplc': 1,
                 'limit': 1e-7,
                 'step_type': 'linear',
             },
