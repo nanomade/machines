@@ -12,6 +12,7 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
 
     def abort_measurement(self):
         print('ABORT')
+        self.source.set_voltage(0)
         self.aborted = True
         self.reset_current_measurement('aborting', error='Aborted', keep_measuring=True)
 
@@ -27,22 +28,22 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
         self._add_metadata(
             labels, 303, comment, nplc=source['nplc'], limit=source['limit']
         )
-        self.reset_current_measurement('dc_sweep')
+        self.reset_current_measurement('2PointDoubleSteppedVSource')
 
     def _configure_instruments(self, source, gate):
         # Configure instruments:
         print('Configure Back gate')
         gate_range = max(abs(gate['start']), abs(gate['stop']))
         self._configure_back_gate(
-            source_range=gate_range, current_limit=gate['limit'], nplc=gate['nplc']
+            source_range=gate_range, limit=gate['limit'], nplc=gate['nplc']
         )
 
-        # TODO!!! CONFIGURE Vxx as 2-point!!!!
         source_range = max(abs(source['start']), abs(source['stop']))
         print('Configure Source')
         self._configure_source(
+            function='v',
             source_range=source_range,
-            current_limit=source['limit'],
+            limit=source['limit'],
             nplc=source['nplc'],
             remote_sense=False,
         )
@@ -64,7 +65,7 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
             print('Ramping gate to {}'.format(gate_ramp_v))
             self.back_gate.set_voltage(gate_ramp_v)
             self.read_gate()
-            self.read_source(read_dmm=False)
+            self.read_source(function='v', read_dmm=False)
             time.sleep(step_size / rate)
 
     def dc_2_point_measurement_v_source(
@@ -119,7 +120,7 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
                     return
 
                 # This is a 2-wire measurement, no need for DMM
-                self.read_source(read_dmm=False)
+                self.read_source(function='v', read_dmm=False)
                 self.read_gate()
 
         time.sleep(2)
