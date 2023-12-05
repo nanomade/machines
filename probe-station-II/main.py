@@ -6,6 +6,7 @@ from PyExpLabSys.common.sockets import DateDataPullSocket
 
 from ps_measurement_base import ProbeStationMeasurementBase
 
+from ps_double_stepped_4point_dc_i_source import ProbeStation4PointDoubleSteppedISource
 from ps_double_stepped_2point_dc_v_source import ProbeStation2PointDoubleSteppedVSource
 
 
@@ -37,6 +38,16 @@ class ProbeStationController(threading.Thread):
         t.start()
         return True
 
+    def start_4point_double_stepped_i_source(self, **kwargs):
+        # TODO: Check that measurement is not already running
+        del self.measurement
+        self.measurement = ProbeStation4PointDoubleSteppedISource()
+        t = threading.Thread(
+            target=self.measurement.dc_4_point_measurement_i_source, kwargs=kwargs
+        )
+        t.start()
+        return True
+
     def _handle_element(self, element):
         cmd = element.get('cmd')
         if cmd == 'start_measurement':
@@ -46,6 +57,8 @@ class ProbeStationController(threading.Thread):
                 return
             if element.get('measurement') == '2point_double_stepped_v_source':
                 self.start_2point_double_stepped_v_source(**element)
+            if element.get('measurement') == '4point_double_stepped_i_source':
+                self.start_4point_double_stepped_i_source(**element)
 
         elif cmd == 'abort':
             if self.measurement.current_measurement['type'] is not None:
