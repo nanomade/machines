@@ -6,7 +6,7 @@ from PyExpLabSys.common.sockets import DateDataPullSocket
 
 from ps_measurement_base import ProbeStationMeasurementBase
 
-from ps_double_stepped_4point_dc import ProbeStation4PointDoubleStepped
+from ps_double_stepped_2point_dc_v_source import ProbeStation2PointDoubleSteppedVSource
 
 
 class ProbeStationController(threading.Thread):
@@ -27,12 +27,12 @@ class ProbeStationController(threading.Thread):
         )
         self.pullsocket.start()
 
-    def start_4point_double_stepped(self, **kwargs):
+    def start_2point_double_stepped_v_source(self, **kwargs):
         # TODO: Check that measurement is not already running
         del self.measurement
-        self.measurement = ProbeStation4PointDoubleStepped()
+        self.measurement = ProbeStation2PointDoubleSteppedVSource()
         t = threading.Thread(
-            target=self.measurement.dc_4_point_measurement, kwargs=kwargs
+            target=self.measurement.dc_2_point_measurement_v_source, kwargs=kwargs
         )
         t.start()
         return True
@@ -44,8 +44,8 @@ class ProbeStationController(threading.Thread):
             if self.measurement.current_measurement['type'] is not None:
                 print('Measurement running, cannot start new')
                 return
-            if element.get('measurement') == '4point_double_stepped':
-                self.start_4point_double_stepped(**element)
+            if element.get('measurement') == '2point_double_stepped_v_source':
+                self.start_2point_double_stepped_v_source(**element)
 
         elif cmd == 'abort':
             if self.measurement.current_measurement['type'] is not None:
