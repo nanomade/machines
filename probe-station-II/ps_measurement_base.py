@@ -37,7 +37,7 @@ class ProbeStationMeasurementBase(object):
         self.sock.setblocking(1)
         self.sock.settimeout(1.0)
 
-        # self.chamber_name = 'cryostat'
+        # self.chamber_name = 'probe_station_ii'
         self.chamber_name = 'dummy'
 
         self.data_set_saver = DataSetSaver(
@@ -129,13 +129,14 @@ class ProbeStationMeasurementBase(object):
                 self.data_set_saver.save_point(key, (now, value))
         self.current_measurement['current_time'] = time.time()
 
-    def _add_metadata(self, labels, meas_type, comment, nplc=None):
+    def _add_metadata(self, labels, meas_type, comment, nplc=None, limit=None):
         metadata = {
             'Time': CustomColumn(time.time(), "FROM_UNIXTIME(%s)"),
             'label': None,
             'type': meas_type,
             'comment': comment,
             'nplc': nplc,
+            'limit': limit,
         }
         for key, value in labels.items():
             metadata.update({'label': value})
