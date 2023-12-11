@@ -6,7 +6,7 @@ PORT = '/dev/serial/by-id/'
 PORT = PORT + 'usb-STMicroelectronics_STM32_Virtual_ComPort_4994387C3550-if00'
 
 
-class DeflectorReader(threading.Thread):
+class DeflectionReader(threading.Thread):
     def __init__(self):
         super().__init__()
         self.ser = serial.Serial(PORT, 38400, timeout=0.2)
@@ -65,11 +65,11 @@ class DeflectorReader(threading.Thread):
 
 
 def main():
-    dr = DeflectorReader()
+    dr = DeflectionReader()
     dr.start()
     while dr.running:
         time.sleep(0.01)
-        print(dr.return_data())
+        print('Return data', dr.return_data())
         # time.sleep(1)
 
 
