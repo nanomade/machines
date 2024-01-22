@@ -404,8 +404,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.measurement_plot_x.append(v_xx[0])
                     self.measurement_plot_y.append(v_xx[1])
 
-        self.measurement_line.setData(
-            self.measurement_plot_x, self.measurement_plot_y)
+        if None not in (self.measurement_plot_x + self.measurement_plot_y):
+            self.measurement_line.setData(
+                self.measurement_plot_x, self.measurement_plot_y)
         self.latest_measurement_type = measurement_type
 
 
