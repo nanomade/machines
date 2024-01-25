@@ -17,6 +17,7 @@ import credentials
 
 class GasReader(threading.Thread):
     """ Read the gas alarm """
+
     def __init__(self, sensors):
         threading.Thread.__init__(self)
         self.name = 'GasalarmReader Thread'
@@ -71,7 +72,7 @@ class Logger(object):
             continuous_data_table='dateplots_gasalarm',
             username=credentials.gas_user,
             password=credentials.gas_passwd,
-            measurement_codenames=db_names
+            measurement_codenames=db_names,
         )
         self.db_logger.name = 'DB Logger Thread'
         self.db_logger.start()
@@ -83,7 +84,7 @@ class Logger(object):
                 comp_val=0.1,
                 comp_type='lin',
                 maximumtime=600,
-                channel=codename
+                channel=codename,
             )
             self.loggers[codename].name = 'Logger_thread_{}'.format(codename)
             self.loggers[codename].start()
