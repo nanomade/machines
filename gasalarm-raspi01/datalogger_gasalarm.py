@@ -60,7 +60,8 @@ class Logger(object):
             # codename: Alarm channel
             'NH3_309_260': 1,
             'H2S_309_260': 2,
-            'H2_309_260': 3
+            'H2_309_260': 3,
+            'H2_309_263': 4,
         }
         self.gas_reader = GasReader(self.sensors)
         self.gas_reader.start()
