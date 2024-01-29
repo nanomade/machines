@@ -17,7 +17,6 @@ import credentials
 
 class GasReader(threading.Thread):
     """ Read the gas alarm """
-
     def __init__(self, sensors):
         threading.Thread.__init__(self)
         self.name = 'GasalarmReader Thread'
@@ -29,7 +28,7 @@ class GasReader(threading.Thread):
         for codename in sensors.keys():
             # (measured value, error code)
             self.values[codename] = 0.0
-            self.values[codename + '_error'] = 5
+            # self.values[codename + '_error'] = 5
         self.quit = False
         self.ttl = 50
 
@@ -47,25 +46,39 @@ class GasReader(threading.Thread):
         while not self.quit:
             time.sleep(0.5)
             self.ttl = 50
+            error = 0
             for codename, channel in self.sensors.items():
+                # Channel zero is not a real channel but an error meta-channel
+                if channel == 0:
+                    continue
                 time.sleep(0.5)
                 data = self.geopal.read_sensor(channel)
                 self.values[codename] = data[0]
                 self.values[codename + '_error'] = data[1]
+                if data[1] != 4:
+                    error = channel
+            self.values['sensor_error'] = error
 
 
 class Logger(object):
     def __init__(self):
         self.loggers = {}
+        # Sensor zero is 0 if all sensors are ok, otherwise the index of the last
+        # sensor with an error.
         self.sensors = {
             # codename: Alarm channel
             'NH3_309_260': 1,
             'H2S_309_260': 2,
             'H2_309_260': 3,
             'H2_309_263': 4,
+            'H2_309_PPFE1': 7,
+            'H2_309_PPFE2': 8,
+            'sensor_error': 0,
         }
         self.gas_reader = GasReader(self.sensors)
         self.gas_reader.start()
+
+        time.sleep(5)
 
         db_names = ['gasalarm_{}'.format(cn) for cn in self.sensors.keys()]
         self.db_logger = ContinuousDataSaver(
@@ -88,9 +101,6 @@ class Logger(object):
             )
             self.loggers[codename].name = 'Logger_thread_{}'.format(codename)
             self.loggers[codename].start()
-            # self.loggers[codename + '_error'].name =
-            # 'Logger_thread_{}'.format(codename)
-            # self.loggers[codename].start()
 
     def main(self):
         """
@@ -100,7 +110,6 @@ class Logger(object):
             time.sleep(5)
             for name in self.loggers.keys():
                 value = self.loggers[name].read_value()
-                # error_value = self.loggers[name + '_error'].read_value()
                 if self.loggers[name].read_trigged():
                     msg = '{} is logging value: {}'
                     print(msg.format(name, value))
@@ -110,10 +119,5 @@ class Logger(object):
 
 
 if __name__ == '__main__':
-    # TODO! Handle the error values!!!!!!
-    # Currently they are simply ignored.
-    # Handling will be highly interesting as soon as email-alarms from PyExpLabSys
-    # are functional
-
     gl = Logger()
     gl.main()
