@@ -36,11 +36,20 @@ class CryostatMeasurementBase(object):
     def __init__(self):
         self.current_measurement = CURRENT_MEASUREMENT_PROTOTYPE.copy()
 
-        self.back_gate = Keithley2400(interface='gpib', gpib_address=22)
+        self.current_source = Keithley6220(interface='lan', hostname='192.168.0.3')
+        self.back_gate = Keithley2400(
+            interface='serial',
+            device='/dev/serial/by-id/usb-FTDI_Chipi-X_FT6F1A7R-if00-port0',
+            baudrate=19200,
+        )
+        self.dmm = Keithley2000(
+            interface='serial',
+            device='/dev/serial/by-id/usb-FTDI_Chipi-X_FT6EYK1T-if00-port0',
+            baudrate=9600,
+        )
+
         self.nanov1 = None  # Used for DC measurements
         self.lock_in = None  # Used for AC measurements
-        self.current_source = Keithley6220(interface='lan', hostname='192.168.0.3')
-        self.dmm = Keithley2000(interface='gpib', gpib_address=16)
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setblocking(1)
