@@ -168,6 +168,7 @@ class CryostatMeasurementBase(object):
         self.back_gate.set_current_limit(1e-7)
         self.back_gate.set_voltage(0)
         self.back_gate.output_state(True)
+        self.back_gate.read_current()
 
     def instrument_id(self):
         found_all = self._identify_all_instruments()
@@ -265,11 +266,12 @@ class CryostatMeasurementBase(object):
         return step_list
 
     def read_gate(self, store_data=True):
-        voltage = self.back_gate.read_voltage()
+        voltage, current = self.back_gate.read_volt_and_current()
+        # voltage = self.back_gate.read_voltage()
         if not store_data:
             # This is just misuse to start a trigger
             return voltage
-        current = self.back_gate.read_current()
+        # current = self.back_gate.read_current()
         data = {
             'v_backgate': voltage,
             'i_backgate': current
