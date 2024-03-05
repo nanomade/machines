@@ -87,11 +87,12 @@ class MoorfieldReader(threading.Thread):
         for param in rf_params:
             codename_key = mapping.data_table + '_' + param
             if codename_key in self.values:
-                self.values[codename_key] = rf_values[param]
+                if rf_values[param] is not None:
+                    self.values[codename_key] = rf_values[param]
 
         for key, value in self.values.items():
             self.pullsocket.set_point_now(key, value)
-            self.livesocket.set_point_now(codename_key, value)
+            self.livesocket.set_point_now(key, value)
 
     def run(self):
         while not self.quit:
