@@ -1,0 +1,8 @@
+<autostart>
+  <name>GasYardLogger</name> <!-- no spaces -->
+  <session>
+    <startdelay>5</startdelay>
+    <command>~/venv/bin/python datalogger.py</command>
+    <name>Gas alarm logger</name>
+  </session>
+</autostart>
