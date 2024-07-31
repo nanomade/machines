@@ -7,6 +7,7 @@ from PyExpLabSys.common.sockets import DateDataPullSocket
 from cryostat_measurement_base import CryostatMeasurementBase
 
 from cryostat_4point_dc import Cryostat4PointDC
+from cryostat_constant_current import CryostatConstantCurrent
 from cryostat_delta_constant_current import CryostatDeltaConstantCurrent
 from cryostat_diff_conductance import CryostatDifferentialConductance
 from cryostat_constant_current_gate_sweep import CryostatConstantCurrentGateSweep
@@ -62,6 +63,17 @@ class CryostatController(threading.Thread):
         t.start()
         return True
 
+    def start_constant_current(self, **kwargs):
+        # TODO: Check that measurement is not already running
+        del(self.measurement)
+        self.measurement = CryostatConstantCurrent()
+        t = threading.Thread(
+            target=self.measurement.constant_current,
+            kwargs=kwargs
+        )
+        t.start()
+        return True
+
     def start_delta_constant_current(self, **kwargs):
         # TODO: Check that measurement is not already running
         del(self.measurement)
@@ -108,6 +120,8 @@ class CryostatController(threading.Thread):
                 self.start_dc_4_point(**element)
             if element.get('measurement') == 'diff_conductance':
                 self.start_diff_conductance(**element)
+            if element.get('measurement') == 'constant_current':
+                self.start_constant_current(**element)
             if element.get('measurement') == 'delta_constant_current':
                 self.start_delta_constant_current(**element)
             if element.get('measurement') == 'constant_current_gate_sweep':
