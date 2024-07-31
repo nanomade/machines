@@ -60,7 +60,7 @@ class CryostatDCBase(CryostatMeasurementBase):
         self.dmm.set_integration_time(2)
         self.dmm.set_trigger_source(external=True)
         # TODO: Replace the line below with a line that configures a trigger
-        self.dmm.scpi_comm(':INIT:CONT ON')  # TODO: Add this to driver
+        self.dmm.instr.write(':INIT:CONT ON')  # TODO: Add this to driver
 
     def _configure_source(self, v_limit, current_range):
         """
