@@ -52,6 +52,9 @@ class CryostatDeltaConstantCurrentGateSweep(CryostatDCBase):
 
         
         self._configure_back_gate()
+        # time.sleep(1)
+        # I do not know, why this is necessary - find out!!!
+        # self.back_gate.set_current_limit(1e-6)
 
         # Set the constant current level
         self.current_source.set_current(current)
@@ -106,7 +109,7 @@ class CryostatDeltaConstantCurrentGateSweep(CryostatDCBase):
             if gate_softland_from > 0:
                 steps = np.arange(gate_softland_from, -0.05, -0.05)
             else:
-                steps = np.arange(gate_softland_from, 0.05, 0.0)
+                steps = np.arange(gate_softland_from, 0.05, 0.05)
                 
             for stopping_gate_v in steps:
                 print('Ramp gate to 0: ', stopping_gate_v)
