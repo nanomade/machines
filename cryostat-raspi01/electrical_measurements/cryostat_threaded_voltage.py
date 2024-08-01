@@ -1,4 +1,5 @@
 import time
+import pyvisa
 
 
 class BackgroundMeasure():
@@ -29,7 +30,7 @@ class MeasureVxx(BackgroundMeasure):
     def _start_measurement(self):
         try:
             voltage = self.nano_v.read_fresh()
-        except TypeError:
+        except pyvisa.errors.VisaIOError:
             voltage = None
         if voltage is None:
             voltage = -1001
@@ -43,7 +44,7 @@ class MeasureVxy(BackgroundMeasure):
     def _start_measurement(self):
         try:
             voltage = self.nano_v.read_fresh()
-        except TypeError:
+        except pyvisa.errors.VisaIOError:
             voltage = None
         if voltage is None:
             voltage = -1001
