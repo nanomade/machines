@@ -17,13 +17,22 @@ class CryostatDCBase(CryostatMeasurementBase):
         super().__init__()
 
         # self.dmm and self.current_source are always in the base
-        # xx_nanov is interfaced via the current source
+        # xx_nanov is interfaced via the current source for delta and
+        # differential conductance, and via the rs232 port for DC
+        # measurements (which is the relevant part here).
+
+        device = 'usb-1a86_USB2.0-Ser_-if00-port0'
+        self.xx_nanov = Keithley2182(
+            interface='serial',
+            device='/dev/serial/by-id/' + device,
+        )
+
         device = 'usb-Prolific_Technology_Inc._USB-Serial_Controller_D-if00-port0'
         self.xy_nanov = Keithley2182(
             interface='serial',
             device='/dev/serial/by-id/' + device,
         )
-        self.masure_voltage_xx = MeasureVxx(self.current_source)
+        self.masure_voltage_xx = MeasureVxx(self.xx_nanov)
         self.masure_voltage_xy = MeasureVxy(self.xy_nanov)
         self.masure_voltage_total = MeasureVTotal(self.dmm)
 
@@ -74,15 +83,13 @@ class CryostatDCBase(CryostatMeasurementBase):
     def _configure_nano_voltmeters(self, nplc):
         """
         Confgire the 2182a's for voltage measurement
-        todo: Setup for external triggering (now done via frontpanel)
         todo: accept other range than auto-range
         """
-        # TODO!!! SET TRIGGER CONFIG!!!!!!
-        self.current_source._2182a_comm(':SENSE:VOLT:CHANNEL1:RANGE:AUTO ON')
+        self.xx_nanov.set_range(0, 0)
         self.xy_nanov.set_range(0, 0)
-        self.current_source._2182a_comm(':SENSE:VOLTAGE:NPLCYCLES ' + str(nplc))
+        self.xx_nanov.set_integration_time(nplc)
         self.xy_nanov.set_integration_time(nplc)
-        self.current_source._2182a_comm(':TRIGGER:SOURCE External')
+        self.xx_nanov.set_trigger_source(external=True)
         self.xy_nanov.set_trigger_source(external=True)
 
     def _read_voltages(self, nplc, store_gate=True):
@@ -104,6 +111,8 @@ class CryostatDCBase(CryostatMeasurementBase):
         t_vtotal.start()
 
         # This will both read the gate and trigger the 2182a's
+        # TODO: It is now possible to trigger measurements independant
+        # of reading the gate.
         self.read_gate(store_data=store_gate)
 
         # Read the measured result
