@@ -13,18 +13,16 @@ class CryostatConstantCurrentGateSweep(CryostatDCBase):
         self.reset_current_measurement(None, error='Aborted')
 
     def constant_current_gate_sweep(
-            self, comment, current: float, v_low: float, v_high: float,
-            steps: int, repeats: int, v_limit: int = 1, nplc: int = 5,
-            **kwargs
+            self, comment, current: float, back_gate: dict,
+            v_limit: float =1, nplc: int = 5, **kwargs
     ):
         """
         Perform a gate sweep while holding a fixed current. Measure voltage.
         TODO:
-        * Integration time for backgate should be configurable
         * Source-measure delay should be configurable and stored as metadata
         """
         labels = {
-            'v_backgate': 'Gate voltage', 'i_backgate': 'Gate current',
+            'v_backgate': 'Back Gate voltage', 'i_backgate': 'Back Gate current',
             'b_field': 'B-Field', 'vti_temp': 'VTI Temperature',
             'sample_temp': 'Sample temperature'
         }
@@ -52,14 +50,17 @@ class CryostatConstantCurrentGateSweep(CryostatDCBase):
         self.read_gate()
 
         aborted = False
-        for gate_v in self._calculate_steps(v_low, v_high, steps, repeats):
+        for back_gate_v in self._calculate_steps(
+                back_gate['v_low'], back_gate['v_high'],
+                back_gate['steps'], back_gate['repeats']
+        ):
             if self.current_measurement['type'] is None:
                 # Measurement has been aborted, skip through the
                 # rest of the steps
                 aborted = True
                 continue
 
-            self.back_gate.set_voltage(gate_v)
+            self.back_gate.set_voltage(back_gate_v)
             # Source measure dealy:
             time.sleep(0.001)  # TODO: Make the delay configurable
             data = self._read_voltages(nplc)
@@ -69,10 +70,11 @@ class CryostatConstantCurrentGateSweep(CryostatDCBase):
             self._read_cryostat()
 
         if aborted:
-            gate_v = self.back_gate.read_voltage()
-            steps = np.arange(gate_v, 0, -0.2 * np.sign(gate_v))
-            for gate_v in steps:
-                self.back_gate.set_voltage(gate_v)
+            # TODO!!! read_voltage() HAS CHANGED SYNTAX!
+            back_gate_v = self.back_gate.read_voltage()
+            steps = np.arange(gate_v, 0, -0.2 * np.sign(back_gate_v))
+            for back_gate_v in steps:
+                self.back_gate.set_voltage(back_gate_v)
                 time.sleep(0.001)  # TODO: Make the delay configurable
                 data = self._read_voltages(nplc)
                 self.add_to_current_measurement(data)
@@ -83,15 +85,23 @@ class CryostatConstantCurrentGateSweep(CryostatDCBase):
         self.reset_current_measurement(None)
 
     def test(self):
-        # self.instrument_id()
+
+        back_gate = {
+            'v_low': -5,
+            'v_high': 2,
+            'steps': 31,
+            'repeats': 1,
+        }
         self.constant_current_gate_sweep(
             comment='Test measurement',
             current=3e-6,
-            v_low=-5,
-            v_high=5,
-            v_limit=1.7,
-            steps=15,
-            repeats=2,
+            back_gate=back_gate,
+            nplc=10,
+            # v_low=-5,
+            # v_high=5,
+            # v_limit=1.7,
+            # steps=15,
+             #repeats=2,
         )
 
 
