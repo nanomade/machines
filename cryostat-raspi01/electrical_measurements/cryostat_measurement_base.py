@@ -24,8 +24,10 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
     'v_xy': [],
     'dv_di': [],
     'theta': [],
-    'v_backgate': [],  # Back gate voltage
-    'i_backgate': [],  # Bakc gate leak-current
+    'v_backgate': [],
+    'i_backgate': [],
+    'v_frontgate': [],
+    'i_frontgate': [],
     'b_field': [],
     'vti_temp': [],
     'sample_temp': [],
