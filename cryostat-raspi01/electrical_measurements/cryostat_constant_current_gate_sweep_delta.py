@@ -13,6 +13,10 @@ from cryostat_dc_base import CryostatDCBase
 
 class CryostatDeltaConstantCurrentGateSweep(CryostatDCBase):
     def __init__(self):
+        trigger_list = [
+            2,  # DMM - brown
+            4,  # Osciloscope - Yellow
+        ]
         super().__init__()
 
     def abort_measurement(self):
