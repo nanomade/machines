@@ -1,4 +1,4 @@
-# import time
+import time
 import threading
 # import logging
 
@@ -13,8 +13,8 @@ from cryostat_threaded_voltage import MeasureVTotal
 
 
 class CryostatDCBase(CryostatMeasurementBase):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, trigger_list):
+        super().__init__(trigger_list)
 
         # self.dmm and self.current_source are always in the base
         # xx_nanov is interfaced via the current source for delta and
@@ -22,11 +22,13 @@ class CryostatDCBase(CryostatMeasurementBase):
         # measurements (which is the relevant part here).
 
         device = 'usb-1a86_USB2.0-Ser_-if00-port0'
+        print('Attemp to connect to Vxx')
         self.xx_nanov = Keithley2182(
             interface='serial',
             device='/dev/serial/by-id/' + device,
         )
-
+        idn = self.xx_nanov.instr.query('*IDN?')
+        print('Connected to Vxx:', idn)
         device = 'usb-Prolific_Technology_Inc._USB-Serial_Controller_D-if00-port0'
         self.xy_nanov = Keithley2182(
             interface='serial',
@@ -85,10 +87,12 @@ class CryostatDCBase(CryostatMeasurementBase):
         Confgire the 2182a's for voltage measurement
         todo: accept other range than auto-range
         """
-        self.xx_nanov.set_range(0, 0)
-        self.xy_nanov.set_range(0, 0)
+        self.xx_nanov.set_range(0.1, 0.1)
+        self.xy_nanov.set_range(0.1, 0.1)
+
         self.xx_nanov.set_integration_time(nplc)
         self.xy_nanov.set_integration_time(nplc)
+
         self.xx_nanov.set_trigger_source(external=True)
         self.xy_nanov.set_trigger_source(external=True)
 
@@ -109,11 +113,6 @@ class CryostatDCBase(CryostatMeasurementBase):
             # kwargs={'nplc': nplc}  # TODO!
         )
         t_vtotal.start()
-
-        # This will both read the gate and trigger the 2182a's
-        # TODO: It is now possible to trigger measurements independant
-        # of reading the gate.
-        self.read_gate(store_data=store_gate)
 
         # Read the measured result
         v_total = self.masure_voltage_total.read_voltage()
