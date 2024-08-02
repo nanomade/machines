@@ -35,7 +35,7 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
 
 
 class CryostatMeasurementBase(object):
-    def __init__(self):
+    def __init__(self, trigger_list):
         self.current_measurement = CURRENT_MEASUREMENT_PROTOTYPE.copy()
 
         self.current_source = Keithley6220(interface='lan', path='192.168.0.3')
@@ -49,7 +49,7 @@ class CryostatMeasurementBase(object):
 
         # TODO: Currently we trig all instruments; we should aim towards
         # trigging only the ones we will actually use
-        self.back_gate.configure_digital_port_as_triggers()
+        self.back_gate.configure_digital_port_as_triggers(trigger_list)
 
         self.lock_in = None  # Used for AC measurements
 
@@ -93,11 +93,25 @@ class CryostatMeasurementBase(object):
         if None not in data.values():
             self.add_to_current_measurement(data)
 
-    def _configure_back_gate(self):
+    def configure_front_gate(self):
         # Todo: take limit as an argument
-        # Todo: abstriact this to configure either front or back gate
+        # Todo: abstract this to configure either front or back gate
+        self.front_gate.clear_buffer()
+        self.front_gate.set_source_function('v')
+        self.front_gate.set_current_limit(1e-7)
+        self.front_gate.set_voltage(0)
+        self.front_gate.output_state(True)
+        print('Read latest value from back gate (verify read works)')
+        self.front_gate.trigger_measurement()
+        data = self.front_gate.read_latest()
+        print(data)
+
+    def configure_back_gate(self):
+        # Todo: take limit as an argument
+        # Todo: abstract this to configure either front or back gate
+        self.back_gate.clear_buffer()
         self.back_gate.set_source_function('v')
-        self.back_gate.set_current_limit(1e-5)
+        self.back_gate.set_current_limit(1e-7)
         self.back_gate.set_voltage(0)
         self.back_gate.output_state(True)
         print('Read latest value from back gate (verify read works)')
@@ -195,23 +209,21 @@ class CryostatMeasurementBase(object):
         # yield?
         return step_list
 
-    def read_gate(self, store_data=True):
-        # voltage, current = self.back_gate.read_volt_and_current()
-        self.back_gate.trigger_measurement()
-        data = self.back_gate.read_latest()
-
-        # EXECUTE TRIGGER - THIS CAN NOW BE DONE MORE IN A MORE CLEVER
-        # WAY, BUT TO GET STARTET WE JUST EMULATE OLD BEHAVIOUR
-        self.back_gate.instr.write('*TRG')
-
-        if not store_data:
-            # This is just misuse to start a trigger
-            return data['v_backgate']
-        # current = self.back_gate.read_current()
+    def read_gate(self):
+        back_gate_data = self.back_gate.read_latest()
         data = {
-            'v_backgate': data['source_value'],
-            'i_backgate': data['value']
+            'v_backgate': back_gate_data['source_value'],
+            'i_backgate': back_gate_data['value']
         }
+
+        if self.front_gate is not None:
+            front_gate_data = self.front_gate.read_latest()
+            data.update(
+                {
+                'v_frontgate': front_gate_data['source_value'],
+                'i_frontgate': front_gate_data['value']
+                }
+            )
         self.add_to_current_measurement(data)
         return data['v_backgate']
 
