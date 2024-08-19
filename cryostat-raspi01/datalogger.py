@@ -27,6 +27,7 @@ class MercuryComm(threading.Thread):
             'cryostat_vti_temperature': -1,
             'cryostat_magnet_temperature': -1,
             'cryostat_sample_temperature': -1,
+            'cryostat_vti_heater_power': -1,
         }
         self.pullsocket = DateDataPullSocket(
             'Cryostatvalues',
@@ -72,6 +73,8 @@ class MercuryComm(threading.Thread):
         self.values['cryostat_magnet_current'] = magnet_info['current'][0] * 2
         self.values['cryostat_magnetic_field'] = self.mercury_ips.read_magnetic_field('GRPZ')[0]
 
+
+        self.values['cryostat_vti_heater_power'] = self.mercury_itc.read_heater('DB1.H1')[0]
         self.values['cryostat_vti_pressure'] = self.mercury_itc.read_pressure('DB8.P1')[0]
         self.values['cryostat_vti_temperature'] = self.mercury_itc.read_temperature('DB6.T1')[0]
         self.values['cryostat_magnet_temperature'] = self.mercury_itc.read_temperature('DB7.T1')[0]
@@ -118,7 +121,7 @@ class Logger(object):
             'cryostat_vti_pressure': 0.1, 'cryostat_vti_temperature': 0.5,
             'cryostat_magnet_temperature': 0.2, 'cryostat_sample_temperature': 0.2,
             'cryostat_magnet_voltage': 0.05, 'cryostat_magnet_current': 0.1,
-            'cryostat_magnetic_field': 0.005
+            'cryostat_magnetic_field': 0.005, 'cryostat_vti_heater_power': 0.2,
         }
         self.db_logger = ContinuousDataSaver(
             continuous_data_table='dateplots_cryostat',
