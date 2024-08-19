@@ -19,7 +19,7 @@ class CryostatController(threading.Thread):
         threading.Thread.__init__(self)
         self.quit = False
 
-        self.measurement = CryostatMeasurementBase()
+        self.measurement = CryostatMeasurementBase(trigger_list=[])
 
         self.pushsocket = DataPushSocket('cryostat', action='enqueue', port=8510)
         self.pushsocket.start()
