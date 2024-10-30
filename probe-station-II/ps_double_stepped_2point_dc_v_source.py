@@ -18,15 +18,15 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
 
     def _setup_data_log(self, comment, source, gate):
         labels = {'v_backgate': 'Gate voltage'}
-        self._add_metadata(labels, 303, comment, nplc=gate['nplc'])
+        self._add_metadata(labels, 303, comment, steps=gate['steps'], nplc=gate['nplc'])
         labels = {'i_backgate': 'Gate current'}
-        self._add_metadata(labels, 303, comment, nplc=gate['nplc'], limit=gate['limit'])
+        self._add_metadata(labels, 303, comment, steps=gate['steps'], nplc=gate['nplc'], limit=gate['limit'])
 
         labels = {'v_xx': 'Vxx'}
-        self._add_metadata(labels, 303, comment, nplc=source['nplc'])
+        self._add_metadata(labels, 303, comment, steps=source['steps'], nplc=source['nplc'])
         labels = {'current': 'Current'}
         self._add_metadata(
-            labels, 303, comment, nplc=source['nplc'], limit=source['limit']
+            labels, 303, comment, nplc=source['nplc'], steps=source['steps'], limit=source['limit']
         )
         self.reset_current_measurement('2PointDoubleSteppedVSource')
 
@@ -69,7 +69,7 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
             time.sleep(step_size / rate)
 
     def dc_2_point_measurement_v_source(
-        self, comment, inner: str, source: dict, gate: dict, **kwargs
+            self, comment, inner: str, source: dict, gate: dict, **kwargs
     ):
         """
         Perform a 2-point DC vi-measurement.
@@ -101,6 +101,7 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
         # Ramp to the first gate voltage:
         self._ramp_gate(v_from=0, v_to=gate['start'])
 
+        latest_inner = 0
         for outer_v in outer_steps:
             if self.current_measurement['type'] == 'aborting':
                 continue
@@ -112,7 +113,13 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
                     # Measurement has been aborted, skip through the
                     # rest of the steps
                     continue
-                inner_inst.set_voltage(inner_v)
+
+                if inner.lower() == 'source':
+                    inner_inst.set_voltage(inner_v)
+                else:
+                    self._ramp_gate(v_from=latest_inner, v_to=inner_v)
+                    latest_inner = inner_v
+
                 print('Set inner to {}'.format(inner_v))
                 time.sleep(0.05)
                 if not self._check_I_source_status():
