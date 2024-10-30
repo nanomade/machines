@@ -129,7 +129,7 @@ class ProbeStationMeasurementBase(object):
                 self.data_set_saver.save_point(key, (now, value))
         self.current_measurement['current_time'] = time.time()
 
-    def _add_metadata(self, labels, meas_type, comment, nplc=None, limit=None):
+    def _add_metadata(self, labels, meas_type, comment, nplc=None, limit=None, steps=None):
         metadata = {
             'Time': CustomColumn(time.time(), "FROM_UNIXTIME(%s)"),
             'label': None,
@@ -137,6 +137,7 @@ class ProbeStationMeasurementBase(object):
             'comment': comment,
             'nplc': nplc,
             'limit': limit,
+            'steps': steps,
         }
         for key, value in labels.items():
             metadata.update({'label': value})
