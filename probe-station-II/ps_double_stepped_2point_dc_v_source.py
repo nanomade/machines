@@ -18,27 +18,41 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
 
     def _setup_data_log(self, comment, source, gate):
         labels = {'v_backgate': 'Gate voltage'}
-        self._add_metadata(labels, 303, comment, steps=gate['steps'], nplc=gate['nplc'])
+        self._add_metadata(
+            labels,
+            303,
+            comment,
+            steps=gate['steps'],
+            repeats=gate['repeats'],
+            nplc=gate['nplc'],
+        )
         labels = {'i_backgate': 'Gate current'}
-        self._add_metadata(labels, 303, comment, steps=gate['steps'], nplc=gate['nplc'], limit=gate['limit'])
+        self._add_metadata(labels, 303, comment, nplc=gate['nplc'], limit=gate['limit'])
 
         labels = {'v_xx': 'Vxx'}
-        self._add_metadata(labels, 303, comment, steps=source['steps'], nplc=source['nplc'])
+        self._add_metadata(
+            labels,
+            303,
+            comment,
+            steps=source['steps'],
+            repeats=source['repeats'],
+            nplc=source['nplc'],
+        )
         labels = {'current': 'Current'}
         self._add_metadata(
-            labels, 303, comment, nplc=source['nplc'], steps=source['steps'], limit=source['limit']
+            labels, 303, comment, nplc=source['nplc'], limit=source['limit']
         )
         self.reset_current_measurement('2PointDoubleSteppedVSource')
 
     def _configure_instruments(self, source, gate):
         # Configure instruments:
         print('Configure Back gate')
-        gate_range = max(abs(gate['start']), abs(gate['stop']))
+        gate_range = max(abs(gate['v_low']), abs(gate['v_high']))
         self._configure_back_gate(
             source_range=gate_range, limit=gate['limit'], nplc=gate['nplc']
         )
 
-        source_range = max(abs(source['start']), abs(source['stop']))
+        source_range = max(abs(source['v_high']), abs(source['v_low']))
         print('Configure Source')
         self._configure_source(
             function='v',
@@ -53,8 +67,20 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
         # Rate is the allowed gate-sweep rate in V/s
         # todo: strongly consider to move this up to dc_base
         sign = np.sign(v_to - v_from)
+        if sign == 0:
+            self.back_gate.set_voltage(0)
+            return
         step_size = 0.025
 
+        if abs(v_to - v_from) < 3 * step_size:
+            # This is not really a ramp, this is a continous sweep that we can
+            # accept to performin one go:
+            msg = 'Small step, set gate directly: {:.1f}mV'
+            print(msg.format(1000 * abs(v_to - v_from)))
+            self.back_gate.set_voltage(v_to)
+            return
+
+        print('Ramp gate: ', v_from, v_to, step_size, sign)
         ramp_list = list(np.arange(v_from, v_to, step_size * sign)) + [v_to]
         for gate_ramp_v in ramp_list:
             if (self.current_measurement['type'] == 'aborting') and (
@@ -69,7 +95,7 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
             time.sleep(step_size / rate)
 
     def dc_2_point_measurement_v_source(
-            self, comment, inner: str, source: dict, gate: dict, **kwargs
+        self, comment, inner: str, source: dict, gate: dict, **kwargs
     ):
         """
         Perform a 2-point DC vi-measurement.
@@ -98,8 +124,9 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
         print('Inner steps are: ', inner_steps)
         print('Outer steps are: ', outer_steps)
 
+        # REMOVE
         # Ramp to the first gate voltage:
-        self._ramp_gate(v_from=0, v_to=gate['start'])
+        # self._ramp_gate(v_from=0, v_to=gate['v_low'])
 
         latest_inner = 0
         for outer_v in outer_steps:
@@ -158,8 +185,9 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
             # inner='gate',  # ourter will be source
             # NPLC?
             source={
-                'start': -0.2,
-                'stop': 0.2,
+                'v_low': -0.2,
+                'v_high': 0.2,
+                'repeats': 2,
                 'steps': 50,
                 'nplc': 5,
                 'limit': 2e-3,
@@ -167,9 +195,10 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
                 'step_type': 'linear',
             },
             gate={
-                'start': -5.0,
-                'stop': 5.0,
+                'v_low': -5.0,
+                'v_high': 5.0,
                 'steps': 3,
+                'repeats': 4,
                 'nplc': 1,
                 'limit': 1e-7,
                 'step_type': 'linear',
