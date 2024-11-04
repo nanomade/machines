@@ -36,11 +36,20 @@ class CryostatMeasurementBase(object):
     def __init__(self):
         self.current_measurement = CURRENT_MEASUREMENT_PROTOTYPE.copy()
 
-        self.back_gate = Keithley2400(interface='gpib', gpib_address=22)
+        self.current_source = Keithley6220(interface='lan', hostname='192.168.0.3')
+        self.back_gate = Keithley2400(
+            interface='serial',
+            device='/dev/serial/by-id/usb-FTDI_Chipi-X_FT6F1A7R-if00-port0',
+            baudrate=19200,
+        )
+        self.dmm = Keithley2000(
+            interface='serial',
+            device='/dev/serial/by-id/usb-FTDI_Chipi-X_FT6EYK1T-if00-port0',
+            baudrate=9600,
+        )
+
         self.nanov1 = None  # Used for DC measurements
         self.lock_in = None  # Used for AC measurements
-        self.current_source = Keithley6220(interface='lan', hostname='192.168.0.3')
-        self.dmm = Keithley2000(interface='gpib', gpib_address=16)
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setblocking(1)
@@ -159,6 +168,7 @@ class CryostatMeasurementBase(object):
         self.back_gate.set_current_limit(1e-7)
         self.back_gate.set_voltage(0)
         self.back_gate.output_state(True)
+        self.back_gate.read_current()
 
     def instrument_id(self):
         found_all = self._identify_all_instruments()
@@ -256,11 +266,12 @@ class CryostatMeasurementBase(object):
         return step_list
 
     def read_gate(self, store_data=True):
-        voltage = self.back_gate.read_voltage()
+        voltage, current = self.back_gate.read_volt_and_current()
+        # voltage = self.back_gate.read_voltage()
         if not store_data:
             # This is just misuse to start a trigger
             return voltage
-        current = self.back_gate.read_current()
+        # current = self.back_gate.read_current()
         data = {
             'v_backgate': voltage,
             'i_backgate': current

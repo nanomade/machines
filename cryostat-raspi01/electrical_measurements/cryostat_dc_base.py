@@ -2,6 +2,8 @@
 import threading
 # import logging
 
+import numpy as np
+
 from PyExpLabSys.drivers.keithley_2182 import Keithley2182
 
 from cryostat_measurement_base import CryostatMeasurementBase
@@ -25,6 +27,28 @@ class CryostatDCBase(CryostatMeasurementBase):
         self.masure_voltage_xy = MeasureVxy(self.xy_nanov)
         self.masure_voltage_total = MeasureVTotal(self.dmm)
 
+    # This code is also used in the Linkham code
+    def _calculate_steps(self, v_low, v_high, steps, repeats):
+        """
+        Calculate a set gate steps.
+        Consider to move to CryostatMeasurementBase
+        """
+        delta = v_high - v_low
+        step_size = delta / (steps - 1)
+
+        # From 0 to v_high
+        up = list(np.arange(0, v_high, step_size))
+        # v_high -> 0
+        down = list(np.arange(v_high, 0, -1 * step_size))
+
+        # N * (v_high -> v_low -> v_high)
+        zigzag = (
+            list(np.arange(v_high, v_low, -1 * step_size)) +
+            list(np.arange(v_low, v_high, step_size))
+        ) * repeats
+        step_list = up + zigzag + down + [0]
+        return step_list
+
     def _configure_dmm(self, v_limit):
         """
         Configure  Model 2000 used for 2-point measurement
@@ -36,7 +60,7 @@ class CryostatDCBase(CryostatMeasurementBase):
         self.dmm.set_integration_time(2)
         self.dmm.set_trigger_source(external=True)
         # TODO: Replace the line below with a line that configures a trigger
-        self.dmm.scpi_comm(':INIT:CONT ON')  # TODO: Add this to driver
+        self.dmm.instr.write(':INIT:CONT ON')  # TODO: Add this to driver
 
     def _configure_source(self, v_limit, current_range):
         """

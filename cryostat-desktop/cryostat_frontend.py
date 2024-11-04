@@ -46,6 +46,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Connect to buttons
         self.start_4p_dc_gate_sweep_button.clicked.connect(
             self._start_4p_dc_gate_sweep)
+        self.start_4p_delta_dc_gate_sweep_button.clicked.connect(
+            self._start_4p_delta_dc_gate_sweep)
         self.start_4p_dc_iv_button.clicked.connect(
             self._start_4p_dc_iv_curve)
         self.start_differential_conductance_button.clicked.connect(
@@ -218,6 +220,36 @@ class MainWindow(QtWidgets.QMainWindow):
             'v_limit': v_limit,
             'v_low': v_low,
             'v_high': v_high,
+            'steps': steps,
+            'repeats': repeats,
+            'nplc': nplc
+        }
+        print(command)
+        self._write_socket(command, 8510)
+
+    def _start_4p_delta_dc_gate_sweep(self):
+        comment = self.measurement_comment.text()
+        current = self.delta_cc_dc_gate_sweep_current.value() * 1e-6
+        v_limit = self.current_source_max_voltage.value()
+        v_low = self.delta_cc_dc_gate_sweep_v_low.value()
+        v_high = self.delta_cc_dc_gate_sweep_v_high.value()
+        v_xx_range = self.delta_cc_dc_vxx_range.value()
+        steps = int(self.delta_cc_dc_gate_sweep_steps.value())
+        repeats = int(self.delta_cc_dc_gate_sweep_repeats.value())
+        nplc = float(self.nano_vm_nplc.currentText())
+        if len(comment) < 5:
+            self.alert('Comment too short')
+            return False
+
+        command = {
+            'cmd': 'start_measurement',
+            'measurement': 'delta_constant_current_gate_sweep',
+            'comment': comment,
+            'current': current,
+            'v_limit': v_limit,
+            'v_low': v_low,
+            'v_high': v_high,
+            'v_xx_range': v_xx_range,
             'steps': steps,
             'repeats': repeats,
             'nplc': nplc
@@ -404,8 +436,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.measurement_plot_x.append(v_xx[0])
                     self.measurement_plot_y.append(v_xx[1])
 
-        self.measurement_line.setData(
-            self.measurement_plot_x, self.measurement_plot_y)
+        if None not in (self.measurement_plot_x + self.measurement_plot_y):
+            self.measurement_line.setData(
+                self.measurement_plot_x, self.measurement_plot_y)
         self.latest_measurement_type = measurement_type
 
 

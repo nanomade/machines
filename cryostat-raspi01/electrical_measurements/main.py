@@ -7,9 +7,11 @@ from PyExpLabSys.common.sockets import DateDataPullSocket
 from cryostat_measurement_base import CryostatMeasurementBase
 
 from cryostat_4point_dc import Cryostat4PointDC
+from cryostat_constant_current import CryostatConstantCurrent
 from cryostat_delta_constant_current import CryostatDeltaConstantCurrent
 from cryostat_diff_conductance import CryostatDifferentialConductance
 from cryostat_constant_current_gate_sweep import CryostatConstantCurrentGateSweep
+from cryostat_constant_current_gate_sweep_delta import CryostatDeltaConstantCurrentGateSweep
 
 
 class CryostatController(threading.Thread):
@@ -61,6 +63,17 @@ class CryostatController(threading.Thread):
         t.start()
         return True
 
+    def start_constant_current(self, **kwargs):
+        # TODO: Check that measurement is not already running
+        del(self.measurement)
+        self.measurement = CryostatConstantCurrent()
+        t = threading.Thread(
+            target=self.measurement.constant_current,
+            kwargs=kwargs
+        )
+        t.start()
+        return True
+
     def start_delta_constant_current(self, **kwargs):
         # TODO: Check that measurement is not already running
         del(self.measurement)
@@ -83,6 +96,17 @@ class CryostatController(threading.Thread):
         t.start()
         return True
 
+    def start_delta_constant_current_gate_sweep(self, **kwargs):
+        # TODO: Check that measurement is not already running
+        del(self.measurement)
+        self.measurement = CryostatDeltaConstantCurrentGateSweep()
+        t = threading.Thread(
+            target=self.measurement.delta_constant_current_gate_sweep,
+            kwargs=kwargs
+        )
+        t.start()
+        return True
+
     def _handle_element(self, element):
         cmd = element.get('cmd')
         if cmd == 'start_measurement':
@@ -96,13 +120,17 @@ class CryostatController(threading.Thread):
                 self.start_dc_4_point(**element)
             if element.get('measurement') == 'diff_conductance':
                 self.start_diff_conductance(**element)
+            if element.get('measurement') == 'constant_current':
+                self.start_constant_current(**element)
             if element.get('measurement') == 'delta_constant_current':
                 self.start_delta_constant_current(**element)
             if element.get('measurement') == 'constant_current_gate_sweep':
                 self.start_constant_current_gate_sweep(**element)
+            if element.get('measurement') == 'delta_constant_current_gate_sweep':
+                self.start_delta_constant_current_gate_sweep(**element)
 
         elif cmd == 'abort':
-            if self.measurement.current_measurement['type'] is None:
+            if self.measurement.current_measurement['type'] is not None:
                 self.measurement.abort_measurement()
 
         elif cmd == 'set_manual_gate':
@@ -152,13 +180,13 @@ class CryostatController(threading.Thread):
             }
             self.pullsocket.set_point_now('status', status)
 
-            if self.measurement.current_measurement['type'] is None:
-                # gate_v = self.measurement.read_gate(store_data=False)
-                # print(gate_v)
-                self.measurement.dmm.set_trigger_source(external=False)
-                self.measurement.dmm.set_range(0)
-                voltage = self.measurement.dmm.next_reading()
-                self.pullsocket.set_point_now('v_tot', voltage)
+            # if self.measurement.current_measurement['type'] is None:
+            #     # gate_v = self.measurement.read_gate(store_data=False)
+            #     # print(gate_v)
+            #     self.measurement.dmm.set_trigger_source(external=False)
+            #     self.measurement.dmm.set_range(0)
+            #     voltage = self.measurement.dmm.next_reading()
+            #     self.pullsocket.set_point_now('v_tot', voltage)
 
 
 def main():

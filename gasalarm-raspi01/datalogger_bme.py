@@ -12,6 +12,7 @@ import credentials
 
 class BMEReader(threading.Thread):
     """ Read the BME680 environmental sensor """
+
     def __init__(self):
         threading.Thread.__init__(self)
         self.name = 'BMEReader Thread'
@@ -32,7 +33,7 @@ class BMEReader(threading.Thread):
             'temperature_309_260': collections.deque(maxlen=2),
             'humidity_309_260': collections.deque(maxlen=5),
             'air_pressure_309_260': collections.deque(maxlen=3),
-            'gas_resistance_309_260': collections.deque(maxlen=30)
+            'gas_resistance_309_260': collections.deque(maxlen=30),
         }
         self.quit = False
         self.ttl = 50
@@ -59,14 +60,14 @@ class BMEReader(threading.Thread):
                 print('No data ready')
             else:
                 # Todo - fill in live-socket data
-                self.values['temperature_309_260'].append(
-                    self.sensor.data.temperature)
+                self.values['temperature_309_260'].append(self.sensor.data.temperature)
                 self.values['humidity_309_260'].append(self.sensor.data.humidity)
                 self.values['air_pressure_309_260'].append(self.sensor.data.pressure)
 
                 if self.sensor.data.heat_stable:
                     self.values['gas_resistance_309_260'].append(
-                        self.sensor.data.gas_resistance)
+                        self.sensor.data.gas_resistance
+                    )
                 else:
                     print('Heat sensor not stable')
 
@@ -81,7 +82,7 @@ class Logger(object):
             continuous_data_table='dateplots_environment',
             username=credentials.env_user,
             password=credentials.env_passwd,
-            measurement_codenames=self.bme_reader.values.keys()
+            measurement_codenames=self.bme_reader.values.keys(),
         )
         self.db_logger.name = 'DB Logger Thread'
         self.db_logger.start()
@@ -93,7 +94,7 @@ class Logger(object):
                 comp_val=0.25,
                 comp_type='lin',
                 maximumtime=600,
-                channel=codename
+                channel=codename,
             )
             self.loggers[codename].name = 'Logger_thread_{}'.format(codename)
             self.loggers[codename].start()
