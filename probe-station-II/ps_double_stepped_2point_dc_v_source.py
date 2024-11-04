@@ -161,7 +161,8 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
 
         if not self.aborted:
             # Ramp gate back to zero
-            self._ramp_gate(v_from=gate['stop'], v_to=0)
+            reading = self.back_gate.read_latest('gate_data')
+            self._ramp_gate(v_from=reading, v_to=0)
             self.reset_current_measurement(None)
         else:
             print('Ramp gate back to zero')
