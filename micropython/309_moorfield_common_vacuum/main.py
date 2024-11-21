@@ -3,6 +3,7 @@ import time
 import socket
 import network
 import machine
+import ubinascii
 
 
 # Pinout of Edwards RJ45 wire;
@@ -11,6 +12,8 @@ import machine
 # 3: lysserød
 # 2: brun
 # 1: rød
+
+WLAN_PASSWORD = 
 
 # <2.05 under range
 EDWARDS_CALIBRATION = {
@@ -69,7 +72,9 @@ def init_wlan():
     print('Connect to network')
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
-    wlan.connect('device')
+    mac = ubinascii.hexlify(network.WLAN().config('mac'),':').decode()
+    print(mac)
+    wlan.connect('DTUdevice', WLAN_PASSWORD)
     time.sleep(5)
     ifconfig = wlan.ifconfig()
     ip_addr = ifconfig[0]
@@ -141,12 +146,14 @@ while True:
     # ifconfig = wlan.ifconfig()
     # ip_addr = ifconfig[0]
     connected = wlan.isconnected()
+    print(wlan)
+    print(wlan.isconnected())
     if not connected:
         timer.init(freq=10.0, mode=machine.Timer.PERIODIC, callback=blink)
         print('Not connected to wifi -  try again')
         wlan.disconnect()
         time.sleep(2)
-        wlan.connect('device')
+        wlan.connect('DTUdevice', WLAN_PASSWORD)
         time.sleep(5)
         continue
 
@@ -168,6 +175,6 @@ while True:
     udp_string = 'json_wn#' + json.dumps(data)
     print(udp_string)
     try:
-        udpsocket.sendto(udp_string, ('10.199.253.148', 8500))
+        udpsocket.sendto(udp_string, ('10.196.161.242', 8500))
     except OSError:
         print('Did not manage to send udp')
