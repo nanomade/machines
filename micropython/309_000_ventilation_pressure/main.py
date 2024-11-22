@@ -5,6 +5,8 @@ import network
 import machine
 from machine import Pin
 
+WLAN_PASSWORD =
+
 LOCATION = '309_000'
 PRESSURE_SCALE = 60.0
 
@@ -12,7 +14,7 @@ def init_wlan():
     print('Connect to network')
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
-    wlan.connect('device')
+    wlan.connect('DTUdevice', WLAN_PASSWORD)
     time.sleep(5)
     ifconfig = wlan.ifconfig()
     ip_addr = ifconfig[0]
@@ -66,7 +68,7 @@ while True:
         print('Not connected to wifi -  try again')
         wlan.disconnect()
         time.sleep(2)
-        wlan.connect('device')
+        wlan.connect('DTUdevice', WLAN_PASSWORD)
         time.sleep(5)
         continue
 
@@ -84,7 +86,7 @@ while True:
     udp_string = 'json_wn#' + json.dumps(data)
     print(udp_string)
     try:
-        udpsocket.sendto(udp_string, ('10.199.253.148', 8500))
+        udpsocket.sendto(udp_string, ('10.196.161.242', 8500))
     except OSError:
         print('Did not manage to send udp')
 
