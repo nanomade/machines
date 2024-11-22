@@ -6,6 +6,8 @@ import network
 # import machine
 from machine import Timer, Pin
 
+WLAN_PASSWORD =
+
 def amphenol_read(i2c):
     time.sleep(0.1)
     result = i2c.readfrom_mem(0x28, 0, 4)
@@ -50,7 +52,7 @@ sta_if = network.WLAN(network.STA_IF)
 sta_if.active(True)
 
 print('Connecting...')
-sta_if.connect('device')
+sta_if.connect('DTUdevice', WLAN_PASSWORD)
 time.sleep(5)
 ifconfig = sta_if.ifconfig()
 ip_addr = ifconfig[0]
@@ -58,7 +60,7 @@ print('ip: {}'.format(ip_addr))
 
 time.sleep(2.5)
 i2c = machine.SoftI2C(sda=sda, scl=scl, freq=10000)
-
+print(i2c.scan())
 udpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udpsocket.connect(('', 8500))
 
@@ -74,7 +76,7 @@ while True:
         print('Not connected to wifi -  try again')
         sta_if.disconnect()
         time.sleep(2)
-        sta_if.connect('device')
+        sta_if.connect('DTUdevice', WLAN_PASSWORD)
         time.sleep(5)
         continue
     timer.deinit()
@@ -90,7 +92,7 @@ while True:
     udp_string = 'json_wn#' + json.dumps(data)
     print(udp_string, ip_addr)
     try:
-        udpsocket.sendto(udp_string, ('10.199.253.148', 8500))
+        udpsocket.sendto(udp_string, ('10.196.161.242', 8500))
         led_show_ok()
     except OSError:
         print('Did not manage to send udp')
