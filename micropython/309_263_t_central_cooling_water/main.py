@@ -5,6 +5,8 @@ import socket
 import network
 import machine
 
+WLAN_PASSWORD =
+
 def blink(t):
     led.value(not led.value())
 
@@ -17,7 +19,7 @@ def init_wlan():
     print('Connect to network')
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
-    wlan.connect('device')
+    wlan.connect('DTUdevice', WLAN_PASSWORD)
     time.sleep(5)
     ifconfig = wlan.ifconfig()
     ip_addr = ifconfig[0]
@@ -59,7 +61,7 @@ while True:
         print('Not connected to wifi -  try again')
         wlan.disconnect()
         time.sleep(2)
-        wlan.connect('device')
+        wlan.connect('DTUdevice', WLAN_PASSWORD)
         time.sleep(5)
         continue
     timer.deinit()
@@ -78,7 +80,7 @@ while True:
     udp_string = 'json_wn#' + json.dumps(data)
     print(udp_string)
     try:
-        udpsocket.sendto(udp_string, ('10.199.253.148', 8500))
+        udpsocket.sendto(udp_string, ('10.196.161.242', 8500))
         led_show_ok()
     except OSError:
         print('Did not manage to send udp')
