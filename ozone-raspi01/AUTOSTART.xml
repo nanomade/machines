@@ -1,0 +1,9 @@
+<autostart>
+  <name>Ozone257Logger</name> <!-- no spaces -->
+  <session>
+    <startdelay>5</startdelay>
+    <command>/home/pi/venv/bin/python dataloggerpy</command>
+    <name>Ozone</name>
+  </session>
+
+</autostart>
