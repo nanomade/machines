@@ -73,7 +73,7 @@ class Logger(object):
         self.loggers = {}
 
         codenames = {
-            'gas_concentration_309_257_o3 ': 0.2,
+            'gas_concentration_309_257_o3 ': 0.5,
         }
 
         self.reader = DeviceComm(codenames.keys())
@@ -108,7 +108,6 @@ class Logger(object):
             time.sleep(2)
             for name in self.loggers.keys():
                 value = self.loggers[name].read_value()
-                print(value)
                 if self.loggers[name].read_trigged():
                     msg = '{} is logging value: {}'
                     print(msg.format(name, value))
