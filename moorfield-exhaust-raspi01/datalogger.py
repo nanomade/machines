@@ -39,8 +39,8 @@ class DeviceComm(threading.Thread):
 
         self.pullsocket = DateDataPullSocket(
             '{}Values'.format(gas_type),
-            ['concentration'],
-            timeouts=[3],
+            ['concentration', 'temperature'],
+            timeouts=[3, 3],
             port=(9000 + i2c_bus),
         )
         self.pullsocket.start()
@@ -61,7 +61,15 @@ class DeviceComm(threading.Thread):
 
     def _update_values(self):
         self.concentration_value = self.device.read_gas_concentration()
+        # msg = '{} concentration: {:.2f}{} @ {:.2f}C'.format(
+        #     self.device.gastype,
+        #     self.concentration_value,
+        #     self.device.gasunits,
+        #     self.device.temp
+        # )
+        # print(msg)
         self.pullsocket.set_point_now('concentration', self.concentration_value)
+        self.pullsocket.set_point_now('temperature', self.device.temp)
         # self.livesocket.set_point_now('concentration', self.concentration_value)
 
     def run(self):
