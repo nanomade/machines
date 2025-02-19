@@ -1,0 +1,9 @@
+<autostart>
+  <name>MoofieldExhaustLogger</name> <!-- no spaces -->
+  <session>
+    <startdelay>5</startdelay>
+    <command>/home/pi/venv/bin/python datalogger.py</command>
+    <name>Ozone</name>
+  </session>
+
+</autostart>

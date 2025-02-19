@@ -4,30 +4,13 @@ import socket
 import network
 
 import machine
-from machine import Pin, Timer
 
 import sht30
 import bme280
 
+LOCATION = '309_909'
 
 WLAN_PASSWORD =
-
-def blink(t):
-    led.value(not led.value())
-
-def led_show_ok():
-    led.value(1)
-    time.sleep(0.5)
-    led.value(0)
-
-
-LOCATION = '309_263'
-timer = Timer(1)
-
-sda = machine.Pin(4)
-scl = machine.Pin(5)
-led = Pin(2, Pin.OUT)
-timer.init(period=100, mode=Timer.PERIODIC, callback=blink)
 
 # Connect to network
 print('Connect to wifi')
@@ -43,7 +26,13 @@ print('ip: {}'.format(ip_addr))
 
 time.sleep(2.5)
 
+# For now, these are the pins we use
+sda = machine.Pin(21)
+scl = machine.Pin(22)
+
+# i2c = machine.I2C(1, sda=sda, scl=scl, freq=10000)
 i2c = machine.SoftI2C(sda=sda, scl=scl, freq=10000)
+# scan_list = i2c.scan()
 
 udpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udpsocket.connect(('', 8500))
@@ -57,21 +46,20 @@ while True:
     connected = sta_if.isconnected()
     print('Connected', connected)
     if not connected:
-        timer.init(period=100, mode=Timer.PERIODIC, callback=blink)
         print('Not connected to wifi -  try again')
         sta_if.disconnect()
         time.sleep(2)
         sta_if.connect('DTUdevice', WLAN_PASSWORD)
         time.sleep(5)
         continue
-    timer.deinit()
-    timer.init(period=2000, mode=Timer.PERIODIC, callback=blink)
 
-    _, air_pressure = bme.values
+    air_pressure_temp, air_pressure = bme.values
     temperature, humidity = sht.measure()
+
     data = {
       'location': LOCATION,
       'temperature': temperature,
+      'temperature_airpressure': air_pressure_temp,
       'humidity': humidity,
       'air_pressure': air_pressure
     }
@@ -79,7 +67,6 @@ while True:
     print(udp_string, ip_addr)
     try:
         udpsocket.sendto(udp_string, ('10.196.161.242', 8500))
-        led_show_ok()
     except OSError:
         print('Did not manage to send udp')
     print()

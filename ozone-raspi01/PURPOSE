@@ -1,0 +1,4 @@
+id: ozone-raspi01
+purpose: Logging of ozone level in room 309-257
+
+Logs the ozone contration close to the ozone cleaning equipment.

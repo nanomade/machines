@@ -9,6 +9,8 @@ from machine import Pin, Timer
 
 import bme680
 
+WLAN_PASSWORD = 
+
 def blink(t):
     led.value(not led.value())
 
@@ -32,7 +34,7 @@ sta_if = network.WLAN(network.STA_IF)
 sta_if.active(True)
 
 print('Connecting...')
-sta_if.connect('device')
+sta_if.connect('DTUdevice', WLAN_PASSWORD)
 time.sleep(5)
 ifconfig = sta_if.ifconfig()
 ip_addr = ifconfig[0]
@@ -57,7 +59,7 @@ while True:
         print('Not connected to wifi -  try again')
         sta_if.disconnect()
         time.sleep(2)
-        sta_if.connect('device')
+        sta_if.connect('DTUdevice', WLAN_PASSWORD)
         time.sleep(5)
         continue
     timer.deinit()
@@ -77,7 +79,7 @@ while True:
     udp_string = 'json_wn#' + json.dumps(data)
     print(udp_string, ip_addr)
     try:
-        udpsocket.sendto(udp_string, ('10.199.253.148', 8500))
+        udpsocket.sendto(udp_string, ('10.196.161.242', 8500))
         led_show_ok()
     except OSError:
         print('Did not manage to send udp')

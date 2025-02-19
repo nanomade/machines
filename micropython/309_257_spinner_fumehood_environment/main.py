@@ -2,15 +2,11 @@ import time
 import json
 import socket
 import network
-
+import machine
 import machine
 from machine import Pin, Timer
 
-import sht30
-import bme280
-
-
-WLAN_PASSWORD =
+import bme680
 
 def blink(t):
     led.value(not led.value())
@@ -20,8 +16,9 @@ def led_show_ok():
     time.sleep(0.5)
     led.value(0)
 
+WLAN_PASSWORD = 'b309_257_env'
 
-LOCATION = '309_263'
+LOCATION = '309_257_SPINNER_FUMEHOOD'
 timer = Timer(1)
 
 sda = machine.Pin(4)
@@ -48,8 +45,7 @@ i2c = machine.SoftI2C(sda=sda, scl=scl, freq=10000)
 udpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udpsocket.connect(('', 8500))
 
-bme = bme280.BME280(i2c=i2c)
-sht = sht30.SHT30(i2c=i2c)
+bme = bme680.BME680_I2C(i2c)
 while True:
     time.sleep(5)
     ifconfig = sta_if.ifconfig()
@@ -66,13 +62,16 @@ while True:
         continue
     timer.deinit()
     timer.init(period=2000, mode=Timer.PERIODIC, callback=blink)
+    temperature = bme.temperature
+    humidity = bme.humidity
+    air_pressure = bme.pressure
+    gas_resistance = bme.gas
 
-    _, air_pressure = bme.values
-    temperature, humidity = sht.measure()
     data = {
       'location': LOCATION,
       'temperature': temperature,
       'humidity': humidity,
+      'gas_resistance': gas_resistance,
       'air_pressure': air_pressure
     }
     udp_string = 'json_wn#' + json.dumps(data)

@@ -1,19 +1,22 @@
 import json
+import math
 import time
 import socket
 import network
 import machine
-from machine import Pin
+import ubinascii
+
+from bme680 import BME680_I2C
 
 WLAN_PASSWORD =
-
-LOCATION = '309_000'
-PRESSURE_SCALE = 60.0
 
 def init_wlan():
     print('Connect to network')
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
+    
+    mac = ubinascii.hexlify(network.WLAN().config('mac'),':').decode()
+    print(mac)
     wlan.connect('DTUdevice', WLAN_PASSWORD)
     time.sleep(5)
     ifconfig = wlan.ifconfig()
@@ -22,34 +25,26 @@ def init_wlan():
     return wlan
 
 
-def convert_twos_comp(val):
-    if val > (2**15 - 1):
-        val = val - 2**16
-    return val
-
-def read_pressure(avg_length=10):
-    pressure_sum = 0
-    for i in range(0, avg_length):
-        time.sleep(0.05)
-        val = I2C.readfrom_mem(0x40, 0xF1, 3)
-        msb = val[0]
-        lsb = val[1]
-        crc = val[2]
-        # Todo: Calculate crc?
-        pressure = convert_twos_comp(msb*256 + lsb) / PRESSURE_SCALE
-        pressure_sum += pressure
-        # print(pressure)
-    avg_pressure = pressure_sum / avg_length
-    return avg_pressure
-
 def blink(timer):
     LED.toggle()
 
-p2 = Pin(2, Pin.IN, Pin.PULL_UP)
-p3 = Pin(3, Pin.IN, Pin.PULL_UP)
-LED = machine.Pin("LED", machine.Pin.OUT)
-I2C = machine.SoftI2C(scl=machine.Pin(3), sda=machine.Pin(2), freq=100_000)
+
+LOCATION = '309_246'
 TEMP_ADC = machine.ADC(4)
+LED = machine.Pin("LED", machine.Pin.OUT)
+
+i2c = machine.SoftI2C(scl=machine.Pin(27), sda=machine.Pin(26), freq=100000)
+devices = i2c.scan()
+print(devices)
+
+bme =  BME680_I2C(i2c)
+bme.temperature_oversample = 16
+bme.pressure_oversample = 16
+bme.humidity_oversample = 16
+bme.filter_size = 63
+
+for _ in range(0, 5):
+    print('Gas reading: ', bme.gas)
 
 udpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udpsocket.connect(('', 8500))
@@ -72,17 +67,21 @@ while True:
         time.sleep(5)
         continue
 
-    timer.init(freq=1.0, mode=machine.Timer.PERIODIC, callback=blink)
-    
-    pressure = read_pressure(30)
+    timer.init(freq=2.0, mode=machine.Timer.PERIODIC, callback=blink)
+
     temp_v = TEMP_ADC.read_u16() * (3.3 / (65535))
-    temperature = 27 - (temp_v - 0.706)/0.001721
+    pico_temperature = 27 - (temp_v - 0.706)/0.001721
+
 
     data = {
       'location': LOCATION,
-      'ventilation_pressure': pressure,
-      'ventilation_picotemperature': temperature,
+      'pico_temperature': pico_temperature,
+      'temperature': bme.temperature,
+      'humidity': bme.humidity,
+      'gas_resistance': bme.gas,
+      'air_pressure': bme.pressure,
     }
+    
     udp_string = 'json_wn#' + json.dumps(data)
     print(udp_string)
     try:
@@ -90,4 +89,4 @@ while True:
     except OSError:
         print('Did not manage to send udp')
 
-    
+
