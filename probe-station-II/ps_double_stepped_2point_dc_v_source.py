@@ -68,7 +68,8 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
         # todo: strongly consider to move this up to dc_base
         sign = np.sign(v_to - v_from)
         if sign == 0:
-            self.back_gate.set_voltage(0)
+            # self.back_gate.set_voltage(0)
+            self.back_gate.set_output_level(0)
             return
         step_size = 0.025
 
@@ -77,7 +78,8 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
             # accept to performin one go:
             msg = 'Small step, set gate directly: {:.1f}mV'
             print(msg.format(1000 * abs(v_to - v_from)))
-            self.back_gate.set_voltage(v_to)
+            # self.back_gate.set_voltage(v_to)
+            self.back_gate.set_output_level(v_to)
             return
 
         print('Ramp gate: ', v_from, v_to, step_size, sign)
@@ -89,7 +91,8 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
                 print('Measurement aborted - stop gate ramp')
                 break
             print('Ramping gate to {}'.format(gate_ramp_v))
-            self.back_gate.set_voltage(gate_ramp_v)
+            # self.back_gate.set_voltage(gate_ramp_v)
+            self.back_gate.set_output_level(gate_ramp_v)
             self.read_gate()
             self.read_source(function='v', read_dmm=False)
             time.sleep(step_size / rate)
@@ -142,7 +145,8 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
                     continue
 
                 if inner.lower() == 'source':
-                    inner_inst.set_voltage(inner_v)
+                    # inner_inst.set_voltage(inner_v)
+                    inner_inst.set_output_level(inner_v)
                 else:
                     self._ramp_gate(v_from=latest_inner, v_to=inner_v)
                     latest_inner = inner_v
@@ -161,13 +165,13 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
 
         if not self.aborted:
             # Ramp gate back to zero
-            reading = self.back_gate.read_latest('gate_data')
-            self._ramp_gate(v_from=reading, v_to=0)
+            reading = self.back_gate.read_latest()
+            self._ramp_gate(v_from=reading['source_value'], v_to=0)
             self.reset_current_measurement(None)
         else:
             print('Ramp gate back to zero')
-            self.back_gate.trigger_measurement('gate_data')
-            reading = self.back_gate.read_latest('gate_data')
+            self.back_gate.trigger_measurement()
+            reading = self.back_gate.read_latest()
             v_from = reading['source_value']
             self._ramp_gate(v_from=v_from, v_to=0, force_even_if_abort=True)
             self.reset_current_measurement(None, error='Aborted')

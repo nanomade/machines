@@ -39,8 +39,8 @@ class ProbeStationMeasurementBase(object):
         self.sock.setblocking(1)
         self.sock.settimeout(1.0)
 
-        self.chamber_name = 'probe_station_ii'
-        # self.chamber_name = 'dummy'
+        # self.chamber_name = 'probe_station_ii'
+        self.chamber_name = 'dummy'
 
         self.data_set_saver = DataSetSaver(
             "measurements_" + self.chamber_name,
@@ -183,10 +183,15 @@ class ProbeStationMeasurementBase(object):
         delta = v_high - v_low
         step_size = delta / (steps - 1)
 
+        if repeats == 0:
+            v_start = v_low
+        else:
+            v_start = 0
+
         # From 0 to v_high
-        up = list(np.arange(0, v_high, step_size))
+        up = list(np.arange(v_start, v_high, step_size))
         # v_high -> 0
-        down = list(np.arange(v_high, 0, -1 * step_size))
+        down = list(np.arange(v_high, v_start, -1 * step_size))
 
         # N * (v_high -> v_low -> v_high)
         zigzag = (
