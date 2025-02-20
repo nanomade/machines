@@ -36,12 +36,12 @@ class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
     def _configure_instruments(self, source, gate):
         # Configure instruments:
         print('Configure Back gate')
-        gate_range = max(abs(gate['start']), abs(gate['stop']))
+        gate_range = max(abs(gate['v_low']), abs(gate['v_high']))
         self._configure_back_gate(
             source_range=gate_range, limit=gate['limit'], nplc=source['nplc']
         )
 
-        source_range = max(abs(source['start']), abs(source['stop']))
+        source_range = max(abs(source['v_low']), abs(source['v_high']))
         print('Configure DMM')
         self._configure_dmm(v_limit=source_range)
 
@@ -69,7 +69,7 @@ class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
                 print('Measurement aborted - stop gate ramp')
                 break
             print('Ramping gate to {}'.format(gate_ramp_v))
-            self.back_gate.set_voltage(gate_ramp_v)
+            self.back_gate.set_output_level(gate_ramp_v)
             self.read_gate()
             self.read_source(function='i')
             time.sleep(step_size / rate)
@@ -111,12 +111,12 @@ class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
         print('Outer steps are: ', outer_steps)
 
         # Ramp to the first gate voltage:
-        self._ramp_gate(v_from=0, v_to=gate['start'])
+        self._ramp_gate(v_from=0, v_to=gate['v_low'])
 
         for outer_v in outer_steps:
             if self.current_measurement['type'] == 'aborting':
                 continue
-            outer_inst.set_voltage(outer_v)
+            outer_inst.set_output_level(outer_v)
             print('Set outer to: {}'.format(outer_v))
 
             for inner_i in inner_steps:
@@ -124,7 +124,7 @@ class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
                     # Measurement has been aborted, skip through the
                     # rest of the steps
                     continue
-                inner_inst.set_current(inner_i)
+                inner_inst.set_output_level(inner_i)
                 print('Set inner to {}'.format(inner_i))
                 time.sleep(0.05)
                 if not self._check_I_source_status():
@@ -138,12 +138,12 @@ class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
 
         if not self.aborted:
             # Ramp gate back to zero
-            self._ramp_gate(v_from=gate['stop'], v_to=0)
+            self._ramp_gate(v_from=gate['v_high'], v_to=0)
             self.reset_current_measurement(None)
         else:
             print('Ramp gate back to zero')
-            self.back_gate.trigger_measurement('gate_data')
-            reading = self.back_gate.read_latest('gate_data')
+            self.back_gate.trigger_measurement()
+            reading = self.back_gate.read_latest()
             v_from = reading['source_value']
             self._ramp_gate(v_from=v_from, v_to=0, force_even_if_abort=True)
             self.reset_current_measurement(None, error='Aborted')
