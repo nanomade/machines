@@ -91,7 +91,6 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
                 print('Measurement aborted - stop gate ramp')
                 break
             print('Ramping gate to {}'.format(gate_ramp_v))
-            # self.back_gate.set_voltage(gate_ramp_v)
             self.back_gate.set_output_level(gate_ramp_v)
             self.read_gate()
             self.read_source(function='v', read_dmm=False)
@@ -124,18 +123,11 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
             inner_inst = self.back_gate
             outer_inst = self.source
 
-        print('Inner steps are: ', inner_steps)
-        print('Outer steps are: ', outer_steps)
-
-        # REMOVE
-        # Ramp to the first gate voltage:
-        # self._ramp_gate(v_from=0, v_to=gate['v_low'])
-
         latest_inner = 0
         for outer_v in outer_steps:
             if self.current_measurement['type'] == 'aborting':
                 continue
-            outer_inst.set_voltage(outer_v)
+            outer_inst.set_output_level(outer_v)
             print('Set outer to: {}'.format(outer_v))
 
             for inner_v in inner_steps:
@@ -145,7 +137,6 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationDCBase):
                     continue
 
                 if inner.lower() == 'source':
-                    # inner_inst.set_voltage(inner_v)
                     inner_inst.set_output_level(inner_v)
                 else:
                     self._ramp_gate(v_from=latest_inner, v_to=inner_v)

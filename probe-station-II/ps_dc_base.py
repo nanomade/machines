@@ -27,7 +27,7 @@ class ProbeStationDCBase(ProbeStationMeasurementBase):
         """
         print('Reset back gate')
         self.back_gate.reset_instrument()
-        self.use_rear_terminals()
+        self.back_gate.use_rear_terminals()
 
         # Ok, for new we just go with defbuffer1... I still think it
         # would be cool to make a dedicated buffer, but it can wait...
@@ -64,7 +64,7 @@ class ProbeStationDCBase(ProbeStationMeasurementBase):
         Configure souce-drain as a voltage source
         """
         self.source.reset_instrument()
-        self.use_rear_terminals()
+        self.source.use_rear_terminals()
 
         # Ok, for new we just go with defbuffer1... I still think it
         # would be cool to make a dedicated buffer, but it can wait...
@@ -81,8 +81,7 @@ class ProbeStationDCBase(ProbeStationMeasurementBase):
             self.source.set_source_function('i', source_range=source_range)
             # Temporarily set sense to auto to avoid temporary range conflicts
             self.source.set_sense_function('v', sense_range=0)
-            self.source.set_current_limit(limit)
-            self.source.set_voltage_limit(limit)
+            self.source.set_limit(limit)
             self.source.set_sense_function('v', sense_range=limit)
         self.source.set_output_level(0)
 
