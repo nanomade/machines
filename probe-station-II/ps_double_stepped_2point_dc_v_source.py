@@ -44,19 +44,6 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationMeasurementBase):
         )
         self.reset_current_measurement('2PointDoubleSteppedVSource')
 
-        print('Ramp gate: ', v_from, v_to, step_size, sign)
-        ramp_list = list(np.arange(v_from, v_to, step_size * sign)) + [v_to]
-        for gate_ramp_v in ramp_list:
-            if (self.current_measurement['type'] == 'aborting') and (
-                not force_even_if_abort
-            ):
-                print('Measurement aborted - stop gate ramp')
-                break
-            print('Ramping gate to {}'.format(gate_ramp_v))
-            self.tsp_link.set_output_level(gate_ramp_v, node=1)
-            self.read()
-            time.sleep(step_size / rate)
-
     def dc_2_point_measurement_v_source(
         self, comment, inner: str, source: dict, gate: dict,
             params: dict, **kwargs

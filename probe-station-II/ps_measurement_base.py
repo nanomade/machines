@@ -204,6 +204,19 @@ class ProbeStationMeasurementBase(object):
             self.tsp_link.set_output_level(v_to, node=1)
             return
 
+        print('Ramp gate: ', v_from, v_to, step_size, sign)
+        ramp_list = list(np.arange(v_from, v_to, step_size * sign)) + [v_to]
+        for gate_ramp_v in ramp_list:
+            if (self.current_measurement['type'] == 'aborting') and (
+                not force_even_if_abort
+            ):
+                print('Measurement aborted - stop gate ramp')
+                break
+            print('Ramping gate to {}'.format(gate_ramp_v))
+            self.tsp_link.set_output_level(gate_ramp_v, node=1)
+            self.read()
+            time.sleep(step_size / rate)
+
     # This code is also used in the Linkham code
     def _calculate_steps(self, v_low, v_high, steps, repeats=1, **kwargs):
         """
