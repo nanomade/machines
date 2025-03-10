@@ -12,7 +12,7 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationMeasurementBase):
 
     def abort_measurement(self):
         print('ABORT')
-        self.source.set_voltage(0)
+        self.tsp_link.set_output_level(0)
         self.aborted = True
         self.reset_current_measurement('aborting', error='Aborted', keep_measuring=True)
 
