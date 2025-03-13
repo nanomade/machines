@@ -26,16 +26,20 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
 }
 
 
+# Todo: This is now in practice a TSP-link base
+# If we want to also implement fully software timed measurements (to be used
+# without TSP-link), this should be separated into common base and a TSP-link base.
 class ProbeStationMeasurementBase(object):
     def __init__(self):
         self.current_measurement = CURRENT_MEASUREMENT_PROTOTYPE.copy()
-        self.tsp_link =  Keithley2450(interface='lan', hostname='192.168.0.3')
+        # Todo: Take ip from configuration
+        self.tsp_link = Keithley2450(interface='lan', hostname='192.168.0.3')
         self.tsp_link.instr.timeout = 10000
 
         self.dmm = Keithley2100(
             interface='usbtmc', visa_string='USB::0x05E6::0x2100::INSTR'
         )
-        
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setblocking(1)
         self.sock.settimeout(1.0)
@@ -63,17 +67,36 @@ class ProbeStationMeasurementBase(object):
         return value
 
     def prepare_tsp_triggers(self):
+        """
+        This defines the TSP-code needed for 2-point DC and 4-point DC measurements
+        Node 1 is the gate and is acting as main unit. Node 2 is source-drain and
+        will recieve all comands via TSP-link from node 1
+
+        Todo:
+        If we want to implent more fancy stuff, eg. delta mode or differential
+        conductance measurements, some of the trigger model code needs
+        to be refacored
+        """
+        # TODO: The lua scripts should go in separate files for easier
+        # maintanence and to not confues the python linting software
         preparescript = """
         -- Prepare trigger to accept TSP-triggers
         tsplink.initialize()
+        --- Clear trigger model
         trigger.model.load("Empty")
         node[2].trigger.model.load("Empty")
+
+        -- Set tsp triggeren to send triggers from node 1 (gate) and accept
+        -- triggers from node 2 (source-drain)
         tsplink.line[1].reset()
         tsplink.line[1].mode = tsplink.MODE_SYNCHRONOUS_MASTER
         tsplink.line[2].mode = tsplink.MODE_SYNCHRONOUS_ACCEPTOR
         trigger.tsplinkout[1].stimulus = trigger.EVENT_NOTIFY1
         trigger.tsplinkin[2].clear()
         trigger.tsplinkin[2].edge = trigger.EDGE_RISING
+
+        -- Configure NOTIFY2 to trigger DMM
+        trigger.digout[1].stimulus = trigger.EVENT_NOTIFY2
 
         node[2].tsplink.line[2].mode = node[2].tsplink.MODE_SYNCHRONOUS_MASTER
         node[2].tsplink.line[1].mode = node[2].tsplink.MODE_SYNCHRONOUS_ACCEPTOR
@@ -83,7 +106,8 @@ class ProbeStationMeasurementBase(object):
 
         -- Build actual trigger model
         trigger.model.setblock(1, trigger.BLOCK_NOTIFY, trigger.EVENT_NOTIFY1)
-        trigger.model.setblock(2, trigger.BLOCK_MEASURE_DIGITIZE)
+        trigger.model.setblock(2, trigger.BLOCK_NOTIFY, trigger.EVENT_NOTIFY2)
+        trigger.model.setblock(3, trigger.BLOCK_MEASURE_DIGITIZE)
 
         node[2].trigger.model.setblock(1, node[2].trigger.BLOCK_WAIT, node[2].trigger.EVENT_TSPLINK1)
         node[2].trigger.model.setblock(2, node[2].trigger.BLOCK_MEASURE_DIGITIZE)
@@ -91,8 +115,8 @@ class ProbeStationMeasurementBase(object):
         self.tsp_link.load_script('preparescript', preparescript)
         self.tsp_link.execute_script('preparescript')
         return
-    
-    def configure_dmm(self, v_limit):
+
+    def configure_dmm(self, v_limit: float, nplc: float):
         """
         Configure  Model 2000 used for 2-point measurement
         The unit is set up to measure on the buffered output of
@@ -100,9 +124,11 @@ class ProbeStationMeasurementBase(object):
         """
         self.dmm.configure_measurement_type('volt:dc')
         self.dmm.set_range(v_limit)
-        self.dmm.set_integration_time(2)
-        self.dmm.scpi_comm(':INIT:CONT ON')  # TODO: Add this to driver
-    
+        self.dmm.set_integration_time(nplc)
+        # CONFIGURE TO USE EXTERNAL TRIGGER
+        # cmd = 'TRIGger:SOURce EXTernal'
+        # self.dmm.scpi_comm(cmd)  # TODO: Add this to driver
+
     def reset_current_measurement(
         self, measurement_type, error=False, keep_measuring=False
     ):
@@ -178,11 +204,9 @@ class ProbeStationMeasurementBase(object):
         Check that source is not in compliance. If it is, the system
         shoudl be stopped (or not depending on configuration).
         """
-        # Here we should check variables as set by _read_gate() and
-        # _read_source, and stop the measurement if appropriate
-
+        # Here we should check variables as set by read() and and stop the
+        # measurement if appropriate
         # :OUTPut[1]:INTerlock:TRIPped?
-
         source_ok = True
         return source_ok
 
@@ -218,34 +242,47 @@ class ProbeStationMeasurementBase(object):
             time.sleep(step_size / rate)
 
     # This code is also used in the Linkham code
-    def _calculate_steps(self, v_low, v_high, steps, repeats=1, **kwargs):
+    def _calculate_steps(self, low, high, steps, repeats=1, **kwargs):
         """
-        Calculate a set gate steps.
-        Consider to move to a common library since so many setups use it
+        Calculate a set steps from low to high and back.
+        If repeats is 0, the ramps starts directly from low, otherwise
+        all values are swept from 0.
+        All ramps will always and at 0.
+
         **kwargs used only to eat extra arguments from network syntax
+        Todo: Consider to move to a common library since so many setups use it
         """
-        delta = v_high - v_low
+        delta = high - low
         step_size = delta / (steps - 1)
 
         if repeats == 0:
-            v_start = v_low
+            start = low
         else:
-            v_start = 0
+            start = 0
 
-        # From 0 to v_high
-        up = list(np.arange(v_start, v_high, step_size))
-        # v_high -> 0
-        down = list(np.arange(v_high, v_start, -1 * step_size))
+        # From 0 to high
+        up = list(np.arange(start, high, step_size))
+        # high -> 0
+        down = list(np.arange(high, start, -1 * step_size))
 
-        # N * (v_high -> v_low -> v_high)
+        # N * (high -> low -> high)
         zigzag = (
-            list(np.arange(v_high, v_low, -1 * step_size))
-            + list(np.arange(v_low, v_high, step_size))
+            list(np.arange(high, low, -1 * step_size))
+            + list(np.arange(low, high, step_size))
         ) * repeats
         step_list = up + zigzag + down + [0]
         return step_list
 
-    def _configure_instruments(self, source, gate, params):
+    def _configure_instruments(self, source: dict, gate: dict, params: dict):
+        """
+        Configures the Keithley 2450's using the TSP link
+        Gate always have v_low and v_high key. Source has either v_low and v_high
+        or i_low and i_high depending on of the measurement is constant voltage
+        or constant current.
+        :param source: The configuration of the source
+        :param source: The configuration of the gate
+        :param source: General parameters: read_back and auto-zero
+        """
         print('Configure tsp-instruments')
         self.prepare_tsp_triggers()
 
@@ -258,9 +295,7 @@ class ProbeStationMeasurementBase(object):
             source_range = max(abs(source['i_high']), abs(source['i_low']))
             source_function = 'i'
             sense_function = 'v'
-        
-        # TODO!!!! THIS REALLY NEED TO GO INTO ps_measurements_base - the code
-        # is essentially the same for both measurement modes!
+
         self.tsp_link.clear_output_queue()
         self.tsp_link.use_rear_terminals(node=1)
         self.tsp_link.use_rear_terminals(node=2)
@@ -268,20 +303,26 @@ class ProbeStationMeasurementBase(object):
         self.tsp_link.set_source_function(function='v', source_range=gate_range, node=1)
         # Temporarily set sense to auto to avoid temporary range conflicts
         self.tsp_link.set_sense_function(function='i', sense_range=0, node=1)
-        
+
         self.tsp_link.set_limit(gate['limit'], node=1)
-        self.tsp_link.set_sense_function(function='i', sense_range=gate['limit'], node=1)
+        self.tsp_link.set_sense_function(
+            function='i', sense_range=gate['limit'], node=1
+        )
         # Always use 2-point measurement for the gate
         self.tsp_link.remote_sense(False, node=1)
         self.tsp_link.set_integration_time(nplc=gate['nplc'], node=1)
 
-        self.tsp_link.set_source_function(source_function, source_range=source_range, node=2)
+        self.tsp_link.set_source_function(
+            source_function, source_range=source_range, node=2
+        )
         # Temporarily set sense to auto to avoid temporary range conflicts
         self.tsp_link.set_sense_function(sense_function, sense_range=0, node=2)
         self.tsp_link.set_limit(source['limit'], node=2)
-        self.tsp_link.set_sense_function(sense_function, sense_range=source['limit'], node=2)
+        self.tsp_link.set_sense_function(
+            sense_function, sense_range=source['limit'], node=2
+        )
         self.tsp_link.set_integration_time(nplc=source['nplc'], node=2)
-        
+
         for node in (1, 2):
             time.sleep(0.25)
             self.tsp_link.clear_buffer(node=node)
@@ -289,7 +330,7 @@ class ProbeStationMeasurementBase(object):
             self.tsp_link.set_output_level(0, node=node)
             self.tsp_link.output_state(True, node=node)
             self.tsp_link.set_auto_zero(params['autozero'], node=node)
-            self.tsp_link.auto_zero_now(node=node) 
+            self.tsp_link.auto_zero_now(node=node)
             self.tsp_link.clear_buffer(node=node)
 
         # If remote sense is activated with output off, a warning is issued
@@ -313,7 +354,7 @@ class ProbeStationMeasurementBase(object):
         """
         self.tsp_link.load_script('execute_iteration', execute_iteration)
         print('Configure done')
-    
+
     def read(self, read_dmm=False):
         self.tsp_link.execute_script('execute_iteration')
         # This script always output exactly three lines
@@ -322,32 +363,28 @@ class ProbeStationMeasurementBase(object):
 
         if 'Amp' in source[1]:
             current = float(source[0])
-            v_xx =  float(source[2])
+            v_xx = float(source[2])
         else:
             current = float(source[2])
-            v_xx =  float(source[0])
-            
-        
+            v_xx = float(source[0])
+
         # Control should always be 'end n m' with n and m both being the
         # current iteration number
         # Todo: Assert this...
         control = self.tsp_link.instr.read().strip()
-        # print('Control is: ', control)
+
         # Todo: Check status if device is in compliance
         data = {
             'i_backgate': float(gate[0]),
             'v_backgate': float(gate[2]),
             'v_xx': v_xx,
             'current': current,
-        }      
+        }
 
-        # TODO! This needs to be trigger based - or at least software triggered before
-        # the tsp script is executed
+        # TODO! This needs to be implemented and testet. The trigger is already
+        # running all we need is to make sure we can read fast enough from usb
         if read_dmm:
             v_total = self.dmm.read_dc_voltage()
-        else:
-            v_total = None
-        if v_total is not None:
             data['v_total'] = v_total
 
         self.add_to_current_measurement(data)
