@@ -48,6 +48,7 @@ class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
         """
         self._setup_data_log(comment=comment, source=source, gate=gate)
         self._configure_instruments(source=source, gate=gate, params=params)
+        self.configure_dmm(source['limit'], source['nplc'])
 
         # Calculate the sweeps
         gate_steps = self._calculate_steps(
