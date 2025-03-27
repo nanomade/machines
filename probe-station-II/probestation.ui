@@ -21,7 +21,7 @@
        <bool>true</bool>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="Main_tab">
        <attribute name="title">
@@ -415,12 +415,12 @@
        <attribute name="title">
         <string>Limits &amp; Parameters</string>
        </attribute>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>90</x>
           <y>230</y>
-          <width>121</width>
+          <width>125</width>
           <height>29</height>
          </rect>
         </property>
@@ -451,7 +451,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>90</x>
@@ -489,7 +489,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>90</x>
@@ -530,7 +530,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>90</x>
@@ -571,7 +571,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>90</x>
@@ -607,12 +607,12 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>90</x>
           <y>320</y>
-          <width>251</width>
+          <width>254</width>
           <height>30</height>
          </rect>
         </property>
@@ -748,7 +748,7 @@
               <item>
                <widget class="QComboBox" name="nplc">
                 <property name="currentText">
-                 <string>1</string>
+                 <string>0.1</string>
                 </property>
                 <property name="minimumContentsLength">
                  <number>0</number>
@@ -815,7 +815,7 @@
           </property>
           <widget class="QWidget" name="DC2pGateSweep">
            <attribute name="title">
-            <string>DC 4p gate sweep</string>
+            <string>DC 2p gate sweep</string>
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_23">
             <item>
@@ -824,6 +824,9 @@
                <layout class="QVBoxLayout" name="DC2pGateSweep_gate_high_verticalLayout">
                 <item>
                  <widget class="QLabel" name="DC2pGateSweep_gate_high_label">
+                  <property name="toolTip">
+                   <string>Highest gate voltage / V</string>
+                  </property>
                   <property name="text">
                    <string>Gate high</string>
                   </property>
@@ -836,6 +839,9 @@
                     <width>80</width>
                     <height>16777215</height>
                    </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Highest gate voltage / V</string>
                   </property>
                   <property name="decimals">
                    <number>3</number>
@@ -860,6 +866,9 @@
                <layout class="QVBoxLayout" name="DC2pGateSweep_gate_low_verticalLayout">
                 <item>
                  <widget class="QLabel" name="DC2pGateSweep_gate_low_label">
+                  <property name="toolTip">
+                   <string>Lowest gate voltage / V</string>
+                  </property>
                   <property name="text">
                    <string>Gate low</string>
                   </property>
@@ -872,6 +881,9 @@
                     <width>80</width>
                     <height>16777215</height>
                    </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Lowest gate voltage / V</string>
                   </property>
                   <property name="decimals">
                    <number>2</number>
@@ -896,6 +908,9 @@
                <layout class="QVBoxLayout" name="DC2pGateSweep_gate_steps_verticalLayout_2">
                 <item>
                  <widget class="QLabel" name="DC2pGateSweep_gate_steps_label">
+                  <property name="toolTip">
+                   <string>Number of steps in gate sweep</string>
+                  </property>
                   <property name="text">
                    <string>Steps</string>
                   </property>
@@ -908,6 +923,9 @@
                     <width>80</width>
                     <height>16777215</height>
                    </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Number of steps in gate sweep</string>
                   </property>
                   <property name="decimals">
                    <number>0</number>
@@ -932,6 +950,9 @@
                <layout class="QVBoxLayout" name="DC2pGateSweep_gate_repeats_verticalLayout">
                 <item>
                  <widget class="QLabel" name="DC2pGateSweep_gate_repeats_label">
+                  <property name="toolTip">
+                   <string>Number of repetitions of gate ramp</string>
+                  </property>
                   <property name="text">
                    <string>Repeat</string>
                   </property>
@@ -944,6 +965,9 @@
                     <width>80</width>
                     <height>16777215</height>
                    </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Number of repetitions of gate ramp</string>
                   </property>
                   <property name="decimals">
                    <number>0</number>
@@ -968,6 +992,9 @@
                <layout class="QVBoxLayout" name="DC2pGateSweep_bias_v_verticalLayout">
                 <item>
                  <widget class="QLabel" name="DC2pGateSweep_source_high_label">
+                  <property name="toolTip">
+                   <string>Highest source voltage / V</string>
+                  </property>
                   <property name="text">
                    <string>Source high</string>
                   </property>
@@ -980,6 +1007,9 @@
                     <width>80</width>
                     <height>16777215</height>
                    </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Highest source voltage / V</string>
                   </property>
                   <property name="decimals">
                    <number>3</number>
@@ -1004,6 +1034,9 @@
                <layout class="QVBoxLayout" name="DC2pGateSweep_bias_v_verticalLayout_2">
                 <item>
                  <widget class="QLabel" name="DC2pGateSweep_source_low_label">
+                  <property name="toolTip">
+                   <string>Lowest source voltage / V</string>
+                  </property>
                   <property name="text">
                    <string>Source low</string>
                   </property>
@@ -1016,6 +1049,9 @@
                     <width>80</width>
                     <height>16777215</height>
                    </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Lowest source voltage / V</string>
                   </property>
                   <property name="decimals">
                    <number>3</number>
@@ -1040,6 +1076,9 @@
                <layout class="QVBoxLayout" name="DC2pGateSweep_source_steps_verticalLayout">
                 <item>
                  <widget class="QLabel" name="DC2pGateSweep_source_steps_label">
+                  <property name="toolTip">
+                   <string>Number of steps in source sweep</string>
+                  </property>
                   <property name="text">
                    <string>Steps</string>
                   </property>
@@ -1052,6 +1091,9 @@
                     <width>80</width>
                     <height>16777215</height>
                    </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Number of steps in source sweep</string>
                   </property>
                   <property name="decimals">
                    <number>0</number>
@@ -1076,6 +1118,9 @@
                <layout class="QVBoxLayout" name="DC2pGateSweep_repeats_verticalLayout_2">
                 <item>
                  <widget class="QLabel" name="DC2pGateSweep_source_repeats_label">
+                  <property name="toolTip">
+                   <string>Number of repetitions of source ramp</string>
+                  </property>
                   <property name="text">
                    <string>Repeat</string>
                   </property>
@@ -1088,6 +1133,9 @@
                     <width>80</width>
                     <height>16777215</height>
                    </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Number of repetitions of source ramp</string>
                   </property>
                   <property name="decimals">
                    <number>0</number>
@@ -1182,95 +1230,77 @@
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="delta_consant_i_tab">
+          <widget class="QWidget" name="DC4pGateSweep">
            <attribute name="title">
-            <string>Δ Constant I</string>
+            <string>DC 4p gate sweep</string>
            </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_24">
+           <layout class="QVBoxLayout" name="verticalLayout_23">
             <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <layout class="QHBoxLayout" name="DC4pGateSweep_horizontalLayout">
               <item>
-               <layout class="QVBoxLayout" name="constant_current_delta_measure_time_verticalLayout">
+               <layout class="QVBoxLayout" name="DC4pGateSweep_gate_high_verticalLayout">
                 <item>
-                 <widget class="QLabel" name="delta_constant_current_measure_time_label">
+                 <widget class="QLabel" name="DC4pGateSweep_gate_high_label">
+                  <property name="toolTip">
+                   <string>Highest gate voltage / V</string>
+                  </property>
                   <property name="text">
-                   <string>Measure Time / s</string>
+                   <string>Gate high</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QSpinBox" name="constant_current_delta_measure_time">
+                 <widget class="QDoubleSpinBox" name="DC4pGateSweep_gate_high">
                   <property name="maximumSize">
                    <size>
-                    <width>142</width>
+                    <width>80</width>
                     <height>16777215</height>
                    </size>
                   </property>
-                  <property name="minimum">
-                   <number>30</number>
-                  </property>
-                  <property name="maximum">
-                   <number>200000</number>
-                  </property>
-                  <property name="singleStep">
-                   <number>100</number>
-                  </property>
-                  <property name="value">
-                   <number>100</number>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="costant_current_delta_current_verticalLayout">
-                <item>
-                 <widget class="QLabel" name="constant_current_delta_current_label">
-                  <property name="text">
-                   <string>Current / μA</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="constant_current_delta_current">
-                  <property name="maximumSize">
-                   <size>
-                    <width>142</width>
-                    <height>16777215</height>
-                   </size>
+                  <property name="toolTip">
+                   <string>Highest gate voltage / V</string>
                   </property>
                   <property name="decimals">
                    <number>3</number>
                   </property>
                   <property name="minimum">
-                   <double>0.010000000000000</double>
+                   <double>-100.000000000000000</double>
                   </property>
                   <property name="maximum">
-                   <double>5000.000000000000000</double>
+                   <double>100.000000000000000</double>
                   </property>
                   <property name="singleStep">
                    <double>1.000000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>5.000000000000000</double>
                   </property>
                  </widget>
                 </item>
                </layout>
               </item>
               <item>
-               <layout class="QVBoxLayout" name="costant_current_delta_gate_v_verticalLayout">
+               <layout class="QVBoxLayout" name="DC4pGateSweep_gate_low_verticalLayout">
                 <item>
-                 <widget class="QLabel" name="constant_current_delta_gate_v_label">
+                 <widget class="QLabel" name="DC4pGateSweep_gate_low_label">
+                  <property name="toolTip">
+                   <string>Lowest gate voltage / V</string>
+                  </property>
                   <property name="text">
-                   <string>Gate V</string>
+                   <string>Gate low</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QDoubleSpinBox" name="constant_current_delta_gate_v">
+                 <widget class="QDoubleSpinBox" name="DC4pGateSweep_gate_low">
                   <property name="maximumSize">
                    <size>
-                    <width>142</width>
+                    <width>80</width>
                     <height>16777215</height>
                    </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Lowest gate voltage / V</string>
                   </property>
                   <property name="decimals">
                    <number>2</number>
@@ -1282,17 +1312,294 @@
                    <double>100.000000000000000</double>
                   </property>
                   <property name="singleStep">
-                   <double>0.250000000000000</double>
+                   <double>1.000000000000000</double>
                   </property>
                   <property name="value">
-                   <double>0.000000000000000</double>
+                   <double>-5.000000000000000</double>
                   </property>
                  </widget>
                 </item>
                </layout>
               </item>
               <item>
-               <spacer name="horizontalSpacer_5">
+               <layout class="QVBoxLayout" name="DC4pGateSweep_gate_steps_verticalLayout_2">
+                <item>
+                 <widget class="QLabel" name="DC4pGateSweep_gate_steps_label">
+                  <property name="toolTip">
+                   <string>Number of steps in gate sweep</string>
+                  </property>
+                  <property name="text">
+                   <string>Steps</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="DC4pGateSweep_gate_steps">
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Number of steps in gate sweep</string>
+                  </property>
+                  <property name="decimals">
+                   <number>0</number>
+                  </property>
+                  <property name="minimum">
+                   <double>1.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>10000.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>1.000000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>51.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="DC4pGateSweep_gate_repeats_verticalLayout">
+                <item>
+                 <widget class="QLabel" name="DC4pGateSweep_gate_repeats_label">
+                  <property name="toolTip">
+                   <string>Number of repetitions of gate ramp</string>
+                  </property>
+                  <property name="text">
+                   <string>Repeat</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="DC4pGateSweep_gate_repeats">
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Number of repetitions of gate ramp</string>
+                  </property>
+                  <property name="decimals">
+                   <number>0</number>
+                  </property>
+                  <property name="minimum">
+                   <double>0.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>100.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>1.000000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>1.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="DC4pGateSweep_bias_v_verticalLayout">
+                <item>
+                 <widget class="QLabel" name="DC4pGateSweep_source_high_label">
+                  <property name="toolTip">
+                   <string>Highest source current / mA</string>
+                  </property>
+                  <property name="text">
+                   <string>Source high</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="DC4pGateSweep_source_high">
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Highest source current / mA</string>
+                  </property>
+                  <property name="decimals">
+                   <number>3</number>
+                  </property>
+                  <property name="minimum">
+                   <double>0.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>10.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.100000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>1.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="DC4pGateSweep_bias_v_verticalLayout_2">
+                <item>
+                 <widget class="QLabel" name="DC4pGateSweep_source_low_label">
+                  <property name="toolTip">
+                   <string>Lowest source current / mA</string>
+                  </property>
+                  <property name="text">
+                   <string>Source low</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="DC4pGateSweep_source_low">
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Lowest source current / mA</string>
+                  </property>
+                  <property name="decimals">
+                   <number>3</number>
+                  </property>
+                  <property name="minimum">
+                   <double>-10.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>0.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.100000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>-1.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="DC4pGateSweep_source_steps_verticalLayout">
+                <item>
+                 <widget class="QLabel" name="DC4pGateSweep_source_steps_label">
+                  <property name="toolTip">
+                   <string>Number of steps in source sweep</string>
+                  </property>
+                  <property name="text">
+                   <string>Steps</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="DC4pGateSweep_source_steps">
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Number of steps in source sweep</string>
+                  </property>
+                  <property name="decimals">
+                   <number>0</number>
+                  </property>
+                  <property name="minimum">
+                   <double>1.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>100.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>1.000000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>11.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="DC4pGateSweep_repeats_verticalLayout_2">
+                <item>
+                 <widget class="QLabel" name="DC4pGateSweep_source_repeats_label">
+                  <property name="toolTip">
+                   <string>Number of repetitions of source ramp</string>
+                  </property>
+                  <property name="text">
+                   <string>Repeat</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="DC4pGateSweep_source_repeats">
+                  <property name="maximumSize">
+                   <size>
+                    <width>80</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>Number of repetitions of source ramp</string>
+                  </property>
+                  <property name="decimals">
+                   <number>0</number>
+                  </property>
+                  <property name="minimum">
+                   <double>0.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>100.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>1.000000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>1.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="DC4pGateSweep_repeats_verticalLayout_3">
+                <item>
+                 <widget class="QLabel" name="DC4pGateSweep_source_inner_loop_label">
+                  <property name="text">
+                   <string>Inner loop</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QComboBox" name="DC4pGateSweep_source_inner_loop_label_box">
+                  <item>
+                   <property name="text">
+                    <string>Gate</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>Source</string>
+                   </property>
+                  </item>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <spacer name="DC4pGateSweep_horizontalSpacer">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
                 </property>
@@ -1305,7 +1612,7 @@
                </spacer>
               </item>
               <item>
-               <widget class="QPushButton" name="start_delta_constant_current_button">
+               <widget class="QPushButton" name="DC4pGateSweep_start_button">
                 <property name="minimumSize">
                  <size>
                   <width>160</width>
@@ -1319,14 +1626,14 @@
                  </size>
                 </property>
                 <property name="text">
-                 <string>Start Delta Constant Current</string>
+                 <string>Start Gate Sweep</string>
                 </property>
                </widget>
               </item>
              </layout>
             </item>
             <item>
-             <spacer name="verticalSpacer_4">
+             <spacer name="verticalSpacer_3">
               <property name="orientation">
                <enum>Qt::Vertical</enum>
               </property>
@@ -1540,514 +1847,6 @@
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="DeltaDCGateSweepTab">
-           <attribute name="title">
-            <string>Delta DC 4p gate sweep</string>
-           </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_23">
-            <item>
-             <layout class="QHBoxLayout" name="delta_cc_gs_horizontalLayout">
-              <item>
-               <layout class="QVBoxLayout" name="delta_cc_gs_verticalLayout_gate_high">
-                <item>
-                 <widget class="QLabel" name="delta_gate_high_label">
-                  <property name="text">
-                   <string>Gate high</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="delta_cc_dc_gate_sweep_v_high">
-                  <property name="maximumSize">
-                   <size>
-                    <width>142</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="decimals">
-                   <number>3</number>
-                  </property>
-                  <property name="minimum">
-                   <double>-100.000000000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>100.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>1.000000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>5.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="delta_cc_gs_verticalLayout_gate_low">
-                <item>
-                 <widget class="QLabel" name="delta_cc_gs_label_gate_low">
-                  <property name="text">
-                   <string>Gate low</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="delta_cc_dc_gate_sweep_v_low">
-                  <property name="maximumSize">
-                   <size>
-                    <width>142</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="decimals">
-                   <number>2</number>
-                  </property>
-                  <property name="minimum">
-                   <double>-100.000000000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>100.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>1.000000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>-5.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="delta_cc_gs_verticalLayout_steps">
-                <item>
-                 <widget class="QLabel" name="delta_cc_gs_label_steps">
-                  <property name="text">
-                   <string>Steps</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="delta_cc_dc_gate_sweep_steps">
-                  <property name="maximumSize">
-                   <size>
-                    <width>142</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="decimals">
-                   <number>0</number>
-                  </property>
-                  <property name="minimum">
-                   <double>11.000000000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>100000.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>10.000000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>51.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="delta_cc_gs_verticalLayout_repeats">
-                <item>
-                 <widget class="QLabel" name="delta_cc_gs_label_repeats">
-                  <property name="text">
-                   <string>Repeats</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="delta_cc_dc_gate_sweep_repeats">
-                  <property name="maximumSize">
-                   <size>
-                    <width>142</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="decimals">
-                   <number>0</number>
-                  </property>
-                  <property name="minimum">
-                   <double>1.000000000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>100000.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>1.000000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>2.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="delta_cc_gs_verticalLayout_current">
-                <item>
-                 <widget class="QLabel" name="delta_dc_gate_sweep_current_label">
-                  <property name="text">
-                   <string>Current / μA</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="delta_cc_dc_gate_sweep_current">
-                  <property name="maximumSize">
-                   <size>
-                    <width>142</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="decimals">
-                   <number>4</number>
-                  </property>
-                  <property name="minimum">
-                   <double>0.000100000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>5000.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.100000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>1.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="delta_cc_gs_verticalLayout_vxx_range">
-                <item>
-                 <widget class="QLabel" name="delta_dc_gate_sweep_labe_2">
-                  <property name="text">
-                   <string>Vxx range / V</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="delta_cc_dc_vxx_range">
-                  <property name="maximumSize">
-                   <size>
-                    <width>142</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="decimals">
-                   <number>4</number>
-                  </property>
-                  <property name="minimum">
-                   <double>0.000100000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>5000.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.100000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>1.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_4">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item>
-               <widget class="QPushButton" name="start_4p_delta_dc_gate_sweep_button">
-                <property name="minimumSize">
-                 <size>
-                  <width>160</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>300</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Start Gate Sweep</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <spacer name="verticalSpacer_3">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>39</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="differential_conductance_tab">
-           <attribute name="title">
-            <string>Differential Conductance</string>
-           </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_22">
-            <item>
-             <layout class="QHBoxLayout" name="differential_conductance_horizontalLayout">
-              <item>
-               <layout class="QVBoxLayout" name="differential_conductance_start_current_verticalLayout">
-                <item>
-                 <widget class="QLabel" name="differential_conductance_start_current_label">
-                  <property name="text">
-                   <string>Start / μA</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="differential_conductance_start_current">
-                  <property name="maximumSize">
-                   <size>
-                    <width>142</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="decimals">
-                   <number>4</number>
-                  </property>
-                  <property name="minimum">
-                   <double>-5000.000000000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>5000.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.100000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>-1.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="differential_conductance_end_current_label_verticalLayout">
-                <item>
-                 <widget class="QLabel" name="differential_conductance_end_current_label">
-                  <property name="text">
-                   <string>Stop / μA</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="differential_conductance_end_current">
-                  <property name="maximumSize">
-                   <size>
-                    <width>142</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="decimals">
-                   <number>4</number>
-                  </property>
-                  <property name="minimum">
-                   <double>0.000100000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>5000.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.100000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>1.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="differential_conductance_steps_verticalLayout">
-                <item>
-                 <widget class="QLabel" name="differential_conductance_steps_label">
-                  <property name="text">
-                   <string>Steps</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="differential_conductance_steps">
-                  <property name="maximumSize">
-                   <size>
-                    <width>142</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="decimals">
-                   <number>0</number>
-                  </property>
-                  <property name="minimum">
-                   <double>1.000000000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>5000.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>1.000000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>51.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="differential_conductance_delta_verticalLayout">
-                <item>
-                 <widget class="QLabel" name="differential_conductance_delta_label">
-                  <property name="text">
-                   <string>Delta / μA</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="differential_conductance_delta">
-                  <property name="maximumSize">
-                   <size>
-                    <width>142</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="decimals">
-                   <number>4</number>
-                  </property>
-                  <property name="minimum">
-                   <double>0.001000000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>5000.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.010000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>0.050000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="differential_conductance_delta_gate_v_verticalLayout">
-                <item>
-                 <widget class="QLabel" name="differential_conductance_gate_v_label">
-                  <property name="text">
-                   <string>Gate V</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="differential_conductance_gate_v">
-                  <property name="maximumSize">
-                   <size>
-                    <width>142</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="decimals">
-                   <number>2</number>
-                  </property>
-                  <property name="minimum">
-                   <double>-100.000000000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>100.000000000000000</double>
-                  </property>
-                  <property name="singleStep">
-                   <double>0.250000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>0.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <spacer name="differential_conductance_horizontalSpacer">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item>
-               <widget class="QPushButton" name="start_differential_conductance_button">
-                <property name="minimumSize">
-                 <size>
-                  <width>160</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>300</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Start Differential Conductante</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <spacer name="differential_conductance_verticalSpacer">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>39</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </widget>
           <widget class="QWidget" name="Manual_control_tab">
            <attribute name="title">
             <string>Manual Control</string>
@@ -2203,7 +2002,7 @@
      <x>0</x>
      <y>0</y>
      <width>1086</width>
-     <height>24</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

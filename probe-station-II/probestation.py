@@ -50,14 +50,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Connect to buttons
         self.DC2pGateSweep_start_button.clicked.connect(
             self._start_2p_dc_gate_sweep)
-        self.start_4p_delta_dc_gate_sweep_button.clicked.connect(
-            self._start_4p_delta_dc_gate_sweep)
-        self.start_4p_dc_iv_button.clicked.connect(
-            self._start_4p_dc_iv_curve)
-        self.start_differential_conductance_button.clicked.connect(
-            self._start_differential_conductance)
-        self.start_delta_constant_current_button.clicked.connect(
-            self._start_delta_constant_current)
+        # self.DC2pGateSweep_start_button.clicked.connect(
+        #    self.self._start_4p_dc_gate_sweep)
 
         self.abort_measurement_button.clicked.connect(self._abort_measurement)
 
