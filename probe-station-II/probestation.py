@@ -37,13 +37,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # I am not sure how to set this default in QTDesigner...
         self.nplc.setCurrentText('1')
 
-        self.vti_temp_setpoint.valueChanged.connect(self._update_vti_temp)
-        self.sample_temp_setpoint.valueChanged.connect(self._update_sample_temp)
-        self.b_field_setpoint.valueChanged.connect(self._update_b_field)
-
-        self.activate_ramp_button.clicked.connect(self._activate_ramp)
-        self.stop_ramp_button.clicked.connect(self._stop_ramp)
-
         self.set_manual_gate_button.clicked.connect(self._set_manual_gate)
         self.toggle_k6221_button.clicked.connect(self._toggle_k6221)
 
@@ -55,45 +48,40 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.abort_measurement_button.clicked.connect(self._abort_measurement)
 
-        self.temperature_plot.setBackground('w')
-        self.temperature_plot.setLabel(axis='left', text='Temperature / C')
-        self.temperature_plot.setLabel(axis='bottom', text='Time')
+        self.gate_plot.setBackground('w')
+        self.gate_plot.setLabel(axis='left', text='Voltage / V')
+        self.gate_plot.setLabel(axis='bottom', text='Time')
 
-        self.b_field_plot.setBackground('w')
-        self.b_field_plot.setLabel(axis='left', text='B-Field / T')
-        self.b_field_plot.setLabel(axis='bottom', text='Time')
+        self.source_plot.setBackground('w')
+        self.source_plot.setLabel(axis='left', text='Voltage / V')
+        self.source_plot.setLabel(axis='bottom', text='Time')
 
         self.status_plot.setBackground('w')
         # This axis might be updated by individual measurements
         self.status_plot.setLabel(axis='left', text='Voltage')
         self.status_plot.setLabel(axis='bottom', text='Time')
 
-        self.vti_temp_x = []
-        self.vti_temp_y = []
-        self.sample_temp_x = []
-        self.sample_temp_y = []
-        self.b_field_x = []
-        self.b_field_y = []
+        self.source_voltage_x = []
+        self.source_voltage_y = []
+        self.gate_voltage_x = []
+        self.gate_voltage_y = []
+        # self.source_current__x = []
+        # self.source_current_y = []
+        # self.gate_current__x = []
+        # self.gate_current_y = []
 
         self.measurement_plot_x = []
         self.measurement_plot_y = []
 
-        self.ramp_start = 0
-        self.ramp = None
-
         pen = pg.mkPen(color=(255, 0, 0))
         pen2 = pg.mkPen(color=(0, 0, 255))
-        self.vti_temp_line = self.temperature_plot.plot(
-            self.vti_temp_x,
-            self.vti_temp_y, pen=pen
+        self.gate_voltage_line = self.gate_plot.plot(
+            self.gate_voltage_x,
+            self.gate_voltage_y, pen=pen
         )
-        self.sample_temp_line = self.temperature_plot.plot(
-            self.sample_temp_x,
-            self.sample_temp_y, pen=pen2
-        )
-        self.b_field_line = self.b_field_plot.plot(
-            self.vti_temp_x,
-            self.vti_temp_y, pen=pen
+        self.source_voltage_line = self.source_plot.plot(
+            self.source_voltage_x,
+            self.source_voltage_y, pen=pen2
         )
         self.measurement_line = self.status_plot.plot(
             self.measurement_plot_x,
@@ -152,16 +140,6 @@ class MainWindow(QtWidgets.QMainWindow):
             ramp.append({'dt': dt, 'temp': temp, 'b_field': b_field})
             i = i + 1
         return ramp
-
-    def _activate_ramp(self):
-        self.ramp_start = time.time()
-        ramp = self._parse_ramp()
-        if ramp is not None:
-            self.ramp = ramp
-
-    def _stop_ramp(self):
-        self.ramp_start = 0
-        self.ramp = None
 
     def _write_socket(self, cmd, port=8500):
         socket_cmd = 'json_wn#' + json.dumps(cmd)
@@ -236,7 +214,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         
         print(command)
-        # self._write_socket(command, 8510)
+        self._write_socket(command, 8510)
 
     def _start_4p_delta_dc_gate_sweep(self):
         comment = self.measurement_comment.text()
@@ -338,17 +316,9 @@ class MainWindow(QtWidgets.QMainWindow):
         print(command)
         self._write_socket(command, 8510)
 
-    def _update_vti_temp(self):
-        setpoint = self.vti_temp_setpoint.value()
-        self._update_via_socket('vti_temperature_setpoint', setpoint)
-
-    def _update_b_field(self):
-        setpoint = self.b_field_setpoint.value()
-        self._update_via_socket('b_field_setpoint', setpoint)
-
-    def _update_sample_temp(self):
-        setpoint = self.sample_temp_setpoint.value()
-        self._update_via_socket('sample_temperature_setpoint', setpoint)
+    # def _update_source_voltage(self):
+    #     setpoint = self.source_voltage_setpoint.value()
+    #     self._update_via_socket('source_voltageerature_setpoint', setpoint)
 
     def _read_socket(self, cmd, port=9000):
         self.read_socket_in_use = True
@@ -371,56 +341,25 @@ class MainWindow(QtWidgets.QMainWindow):
         # TODO:
         # Consider to move all the socket reads into a separate thread that
         # will continuously track these values
-        vti_temp = self._read_socket('cryostat_vti_temperature')
-        sample_temp = self._read_socket('cryostat_sample_temperature')
-        b_field = self._read_socket('cryostat_magnetic_field')
-        if vti_temp is None or b_field is None:
+        source_voltage = self._read_socket('source_voltage')
+        gate_voltage = self._read_socket('gate_voltage')
+        if source_voltage is None or gate_voltage is None:
             return
-        self.sample_temp_show.setText('{:.2f}K'.format(sample_temp))
-        self.vti_temp_show.setText('{:.2f}K'.format(vti_temp))
-        self.b_field_show.setText('{:.6f}T'.format(b_field))
+        self.source_voltage_show.setText('{:.2f}mV'.format(sourc_voltage * 1000))
+        self.gate_voltage_show.setText('{:.2f}mV'.format(gate_voltage * 1000))
 
-        self.vti_temp_x.append(time.time() - self.t_start)
-        self.vti_temp_y.append(vti_temp)
-        self.sample_temp_x.append(time.time() - self.t_start)
-        self.sample_temp_y.append(sample_temp)
+        self.source_voltage_x.append(time.time() - self.t_start)
+        self.source_voltage_y.append(source_voltage)
+        self.gate_voltage_x.append(time.time() - self.t_start)
+        self.gate_voltage_y.append(sample_temp)
 
-        self.b_field_x.append(time.time() - self.t_start)
-        self.b_field_y.append(b_field)
-        self.vti_temp_line.setData(self.vti_temp_x, self.vti_temp_y)
-        self.sample_temp_line.setData(self.sample_temp_x, self.sample_temp_y)
-        self.b_field_line.setData(self.b_field_x, self.b_field_y)
+        self.source_voltage_line.setData(self.source_voltage_x, self.source_voltage_y)
+        self.gate_voltage_line.setData(self.gate_voltage_x, self.gate_voltage_y)
 
     def update_plot_data(self):
-        if self.ramp_start > 0:
-            current_ramp_time = time.time() - self.ramp_start
-            msg = '{:.1f}s ({:.2f}min)'
-            self.ramp_time_show.setText(
-                msg.format(current_ramp_time, current_ramp_time/60.0)
-            )
-            ramp_time_sum = 0
-            ramp_line = 0
-            for row in self.ramp:
-                dt = row['dt'] * 60
-                if ramp_time_sum + dt < current_ramp_time:
-                    ramp_time_sum += dt
-                    ramp_line += 1
-                else:
-                    break
-            if not row['temp'] == self.sample_temp_setpoint.value():
-                self.sample_temp_setpoint.setValue(row['temp'])
-            if not row['b_field'] == self.b_field_setpoint.value():
-                self.b_field_setpoint.setValue(row['b_field'])
-
-            # Highlight current ramp line:
-            self.ramp_table.selectRow(ramp_line)
-        else:
-            self.ramp_time_show.setText('')
-
         if self.read_socket_in_use:
             time.sleep(0.05)
             return
-
         self._update_temp_and_field()
 
         # Read status of ongoing measurement

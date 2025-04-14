@@ -21,7 +21,7 @@
        <bool>true</bool>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="Main_tab">
        <attribute name="title">
@@ -29,11 +29,11 @@
        </attribute>
        <layout class="QHBoxLayout" name="horizontalLayout_4">
         <item>
-         <layout class="QVBoxLayout" name="verticalLayout_13">
+         <layout class="QVBoxLayout" name="live_plots_verticalLayout">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <layout class="QHBoxLayout" name="gate_live_horizontalLayout">
             <item>
-             <widget class="PlotWidget" name="temperature_plot" native="true">
+             <widget class="PlotWidget" name="gate_plot" native="true">
               <property name="minimumSize">
                <size>
                 <width>400</width>
@@ -49,7 +49,7 @@
                 <item>
                  <widget class="QLabel" name="label_3">
                   <property name="text">
-                   <string>VTI Temperature</string>
+                   <string>Gate Voltage</string>
                   </property>
                  </widget>
                 </item>
@@ -112,7 +112,7 @@
                 <item>
                  <widget class="QLabel" name="label_5">
                   <property name="text">
-                   <string>Sample Temperature</string>
+                   <string>Gate current</string>
                   </property>
                  </widget>
                 </item>
@@ -190,7 +190,7 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout">
             <item>
-             <widget class="PlotWidget" name="b_field_plot" native="true">
+             <widget class="PlotWidget" name="source_plot" native="true">
               <property name="minimumSize">
                <size>
                 <width>400</width>
@@ -206,7 +206,7 @@
                 <item>
                  <widget class="QLabel" name="label_7">
                   <property name="text">
-                   <string>B-field</string>
+                   <string>Source Voltage</string>
                   </property>
                  </widget>
                 </item>
@@ -287,123 +287,6 @@
                </spacer>
               </item>
              </layout>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="temp_ramp_tab">
-       <attribute name="title">
-        <string>Ramps</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_5">
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_4">
-          <item>
-           <widget class="QTableWidget" name="ramp_table">
-            <property name="rowCount">
-             <number>26</number>
-            </property>
-            <property name="columnCount">
-             <number>3</number>
-            </property>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <row/>
-            <column>
-             <property name="text">
-              <string>Time / min</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Temp / K</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>B-Field / T</string>
-             </property>
-            </column>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_5">
-            <item>
-             <widget class="QPushButton" name="activate_ramp_button">
-              <property name="text">
-               <string>Activate ramp</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="stop_ramp_button">
-              <property name="text">
-               <string>Stop ramp</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_3">
-              <item>
-               <widget class="QLabel" name="label">
-                <property name="text">
-                 <string>Ramp time</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="ramp_time_show">
-                <property name="enabled">
-                 <bool>true</bool>
-                </property>
-                <property name="cursor">
-                 <cursorShape>ArrowCursor</cursorShape>
-                </property>
-                <property name="readOnly">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
             </item>
            </layout>
           </item>
@@ -1102,7 +985,7 @@
                    <double>1.000000000000000</double>
                   </property>
                   <property name="maximum">
-                   <double>100.000000000000000</double>
+                   <double>10000.000000000000000</double>
                   </property>
                   <property name="singleStep">
                    <double>1.000000000000000</double>
@@ -2002,7 +1885,7 @@
      <x>0</x>
      <y>0</y>
      <width>1086</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
   </widget>
