@@ -516,6 +516,22 @@
          </item>
         </layout>
        </widget>
+       <widget class="PlotWidget" name="simulation_plot" native="true">
+        <property name="geometry">
+         <rect>
+          <x>80</x>
+          <y>380</y>
+          <width>921</width>
+          <height>450</height>
+         </rect>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>400</width>
+          <height>250</height>
+         </size>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="measurements">
        <property name="sizePolicy">
@@ -1078,10 +1094,10 @@
                </spacer>
               </item>
               <item>
-               <widget class="QPushButton" name="DC2pGateSweep_start_button">
+               <widget class="QPushButton" name="DC2pGateSweep_simulate_button">
                 <property name="minimumSize">
                  <size>
-                  <width>160</width>
+                  <width>80</width>
                   <height>0</height>
                  </size>
                 </property>
@@ -1092,7 +1108,26 @@
                  </size>
                 </property>
                 <property name="text">
-                 <string>Start Gate Sweep</string>
+                 <string>Simulate</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="DC2pGateSweep_start_button">
+                <property name="minimumSize">
+                 <size>
+                  <width>80</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>300</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Start</string>
                 </property>
                </widget>
               </item>

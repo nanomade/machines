@@ -10,6 +10,7 @@ import pyqtgraph as pg
 import sys
 import time
 import json
+import pickle
 import socket
 
 
@@ -43,6 +44,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Connect to buttons
         self.DC2pGateSweep_start_button.clicked.connect(
             self._start_2p_dc_gate_sweep)
+        self.DC2pGateSweep_simulate_button.clicked.connect(
+            self._simulate_2p_dc_gate_sweep)
         # self.DC2pGateSweep_start_button.clicked.connect(
         #    self.self._start_4p_dc_gate_sweep)
 
@@ -55,6 +58,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.source_plot.setBackground('w')
         self.source_plot.setLabel(axis='left', text='Voltage / V')
         self.source_plot.setLabel(axis='bottom', text='Time')
+
+        self.simulation_plot.setBackground('w')
+        self.simulation_plot.setLabel(axis='left', text='Voltage / V')
+        self.simulation_plot.setLabel(axis='bottom', text='Time')
 
         self.status_plot.setBackground('w')
         # This axis might be updated by individual measurements
@@ -211,11 +218,48 @@ class MainWindow(QtWidgets.QMainWindow):
                 'source_measure_delay':  1e-3, # TODO!!!!!!!
             },
         }
-
-        
         print(command)
         self._write_socket(command, 8510)
 
+    def _simulate_2p_dc_gate_sweep(self):
+        ### NOTICE!!!!
+        # THE CODE IN THE FOUR START/SIMULATE BUTTONS IS EXTREMELY SIMILAR
+        # REFACTOR INTO COMMON CODE!!!!
+        if self.DC2pGateSweep_source_inner_loop_label_box.currentText() == 'Gate':
+            inner = 'gate'
+        else:
+            inner = 'source'
+        command = {
+            'cmd': 'simulate',
+            'inner': inner,
+            'gate': {
+                'v_low': self.DC2pGateSweep_gate_low.value(),
+                'v_high': self.DC2pGateSweep_gate_high.value(),
+                'steps': int(self.DC2pGateSweep_gate_steps.value()),
+                'repeats': int(self.DC2pGateSweep_gate_repeats.value()),
+                'nplc': float(self.nplc.currentText()),
+                'limit': self.gate_max_current.value() * 1e-6,
+            },
+            'source': {
+                'v_low': self.DC2pGateSweep_source_low.value(),
+                'v_high': self.DC2pGateSweep_source_high.value(),
+                'steps': int(self.DC2pGateSweep_source_steps.value()),
+                'repeats': int(self.DC2pGateSweep_source_repeats.value()),
+                'nplc': float(self.nplc.currentText()),
+                'limit': self.source_max_current.value() * 1e-3
+            },
+            'params': {
+                'autozero': False, # TODO!!!!!!!
+                'readback': False, # TODO!!!!!!!
+                'source_measure_delay':  1e-3, # TODO!!!!!!!
+            },
+        }
+        self._write_socket(command, 8510)
+        time.sleep(0.1)
+        value_p = self._read_socket(cmd='simulation', port=9002)
+        print(value_p)
+
+        
     def _start_4p_delta_dc_gate_sweep(self):
         comment = self.measurement_comment.text()
         current = self.delta_cc_dc_gate_sweep_current.value() * 1e-6
