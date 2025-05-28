@@ -4,8 +4,10 @@ import socket
 
 import numpy as np
 
-from PyExpLabSys.drivers.keithley_2100 import Keithley2100
+# from PyExpLabSys.drivers.keithley_2100 import Keithley2100
 from PyExpLabSys.drivers.keithley_2450 import Keithley2450
+
+from ps_dmm_reader import ProbeStationDMMReader
 
 # Todo: Check why CustomColumn is needed???
 from PyExpLabSys.common.database_saver import DataSetSaver, CustomColumn
@@ -20,7 +22,7 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
     'current_time': 0,
     'current': [],
     'v_total': [],
-    'v_xx': [],
+    'v_source': [],
     'v_backgate': [],  # Back gate voltage
     'i_backgate': [],  # Bakc gate leak-current
 }
@@ -32,20 +34,20 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
 class ProbeStationMeasurementBase(object):
     def __init__(self):
         self.current_measurement = CURRENT_MEASUREMENT_PROTOTYPE.copy()
+
+        self.dmm_reader = ProbeStationDMMReader('USB0::1510::8448::8019151::0::INSTR')
+        self.dmm_reader.start()
+
         # Todo: Take ip from configuration
         self.tsp_link = Keithley2450(interface='lan', hostname='192.168.0.3')
         self.tsp_link.instr.timeout = 10000
-
-        self.dmm = Keithley2100(
-            interface='usbtmc', visa_string='USB::0x05E6::0x2100::INSTR'
-        )
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setblocking(1)
         self.sock.settimeout(1.0)
 
-        # self.chamber_name = 'probe_station_ii'
-        self.chamber_name = 'dummy'
+        self.chamber_name = 'probe_station_ii'
+        # self.chamber_name = 'dummy'
 
         self.data_set_saver = DataSetSaver(
             "measurements_" + self.chamber_name,
@@ -54,6 +56,10 @@ class ProbeStationMeasurementBase(object):
             credentials.passwd,
         )
         self.data_set_saver.start()
+
+    def stop(self):
+        self.dmm_reader.running = False
+        time.sleep(0.5)
 
     def _read_socket(self, cmd):
         try:
@@ -116,18 +122,20 @@ class ProbeStationMeasurementBase(object):
         self.tsp_link.execute_script('preparescript')
         return
 
-    def configure_dmm(self, v_limit: float, nplc: float):
-        """
-        Configure  Model 2000 used for 2-point measurement
-        The unit is set up to measure on the buffered output of
-        the 2450.
-        """
-        self.dmm.configure_measurement_type('volt:dc')
-        self.dmm.set_range(v_limit)
-        self.dmm.set_integration_time(nplc)
-        # CONFIGURE TO USE EXTERNAL TRIGGER
-        # cmd = 'TRIGger:SOURce EXTernal'
-        # self.dmm.scpi_comm(cmd)  # TODO: Add this to driver
+    # def configure_dmm(self, v_limit: float, nplc: float):
+    #     """
+    #     Configure  Model 2000 used for 2-point measurement
+    #     The unit is set up to measure on the buffered output of
+    #     the 2450.
+    #     """
+    #     self.dmm.measurement_function('volt:dc')
+    #     self.dmm.measurement_range(v_limit)
+    #     self.dmm.integration_time(1)
+    #     self.dmm.trigger_source(external=False)
+    #     # Consider whether it makes sense to use external trigger. This would
+    #     # sync the DMM to the 2450'ies but would also lock the measurement and
+    #     # potentially slow down. The DMM is a sanity check that does not
+    #     # strictly need to be 100% sync'ed to the actual measurement
 
     def reset_current_measurement(
         self, measurement_type, error=False, keep_measuring=False
@@ -253,6 +261,8 @@ class ProbeStationMeasurementBase(object):
         Todo: Consider to move to a common library since so many setups use it
         """
         delta = high - low
+        if steps < 2:
+            return [low]
         step_size = delta / (steps - 1)
 
         if repeats == 0:
@@ -272,6 +282,59 @@ class ProbeStationMeasurementBase(object):
         ) * repeats
         step_list = up + zigzag + down + [0]
         return step_list
+
+    def step_simulator(
+        self, inner: str, source: dict, gate: dict, params: dict, **kwarg
+    ):
+        gate_steps = self._calculate_steps(
+            low=gate['v_low'],
+            high=gate['v_high'],
+            repeats=gate['repeats'],
+            steps=gate['steps'],
+        )
+        if 'v_low' in source:
+            low = 'v_low'
+            high = 'v_high'
+        else:
+            low = 'i_low'
+            high = 'i_high'
+        source_steps = self._calculate_steps(
+            low=source[low],
+            high=source[high],
+            repeats=source['repeats'],
+            steps=source['steps'],
+        )
+        assert inner.lower() in ('source', 'gate')
+        if inner.lower() == 'source':
+            inner_steps = source_steps
+            outer_steps = gate_steps
+            nplc = source['nplc']
+        else:
+            inner_steps = gate_steps
+            outer_steps = source_steps
+            nplc = gate['nplc']
+
+        if params['readback']:
+            # If readback is enabled, measurements will take twice as long
+            nplc = nplc * 2
+
+        # Notice, gate-protection ramping is currently not simulated, but the
+        # generation of the steps is done iteratively, so it should not be
+        # difficult to do at a later stage
+        dt = 0
+        simulation = {
+            'time': [],
+            'inner': [],
+            'outer': [],
+        }
+        for outer_step in outer_steps:
+            for inner_step in inner_steps:
+                simulation['time'].append(dt)
+                simulation['outer'].append(outer_step)
+                simulation['inner'].append(inner_step)
+                # Notice! Autozero is not simulated
+                dt = dt + nplc + params['source_measure_delay']
+        return simulation
 
     def _configure_instruments(self, source: dict, gate: dict, params: dict):
         """
@@ -363,10 +426,10 @@ class ProbeStationMeasurementBase(object):
 
         if 'Amp' in source[1]:
             current = float(source[0])
-            v_xx = float(source[2])
+            v_source = float(source[2])
         else:
             current = float(source[2])
-            v_xx = float(source[0])
+            v_source = float(source[0])
 
         # Control should always be 'end n m' with n and m both being the
         # current iteration number
@@ -377,14 +440,18 @@ class ProbeStationMeasurementBase(object):
         data = {
             'i_backgate': float(gate[0]),
             'v_backgate': float(gate[2]),
-            'v_xx': v_xx,
+            'v_source': v_source,
             'current': current,
         }
 
         # TODO! This needs to be implemented and testet. The trigger is already
         # running all we need is to make sure we can read fast enough from usb
         if read_dmm:
-            v_total = self.dmm.read_dc_voltage()
+            v_total = self.dmm_reader.value
+            # raw = self.dmm.scpi_comm(':FETCH?')
+            # print(raw)
+            # v_total = self.dmm.read_dc_voltage()
+            # v_total = float(raw)
             data['v_total'] = v_total
 
         self.add_to_current_measurement(data)

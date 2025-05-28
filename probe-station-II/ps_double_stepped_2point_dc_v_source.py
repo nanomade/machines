@@ -12,7 +12,6 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationMeasurementBase):
 
     def abort_measurement(self):
         print('ABORT')
-        self.tsp_link.set_output_level(0)
         self.aborted = True
         self.reset_current_measurement('aborting', error='Aborted', keep_measuring=True)
 
@@ -29,7 +28,7 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationMeasurementBase):
         labels = {'i_backgate': 'Gate current'}
         self._add_metadata(labels, 303, comment, nplc=gate['nplc'], limit=gate['limit'])
 
-        labels = {'v_xx': 'Vxx'}
+        labels = {'v_source': 'Vsource'}
         self._add_metadata(
             labels,
             303,
@@ -45,8 +44,7 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationMeasurementBase):
         self.reset_current_measurement('2PointDoubleSteppedVSource')
 
     def dc_2_point_measurement_v_source(
-        self, comment, inner: str, source: dict, gate: dict,
-            params: dict, **kwargs
+        self, comment, inner: str, source: dict, gate: dict, params: dict, **kwargs
     ):
         """
         Perform a 2-point DC vi-measurement.
@@ -54,10 +52,20 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationMeasurementBase):
         # TODO! Store information about readback and auto-zero in metadata!
         self._setup_data_log(comment=comment, source=source, gate=gate)
         self._configure_instruments(source=source, gate=gate, params=params)
-        
+
         # Calculate the sweeps
-        gate_steps = self._calculate_steps(**gate)
-        source_steps = self._calculate_steps(**source)
+        gate_steps = self._calculate_steps(
+            low=gate['v_low'],
+            high=gate['v_high'],
+            repeats=gate['repeats'],
+            steps=gate['steps'],
+        )
+        source_steps = self._calculate_steps(
+            low=source['v_low'],
+            high=source['v_high'],
+            repeats=source['repeats'],
+            steps=source['steps'],
+        )
 
         assert inner.lower() in ('source', 'gate')
         if inner.lower() == 'source':
@@ -71,15 +79,19 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationMeasurementBase):
             inner_node = 1  # Gate
             outer_node = 2  # Source
 
-        latest_inner = 0
+        latest_gate = 0
         for outer_v in outer_steps:
             if self.current_measurement['type'] == 'aborting':
                 continue
-            
+
             print('Set outer to: {}'.format(outer_v))
             self.tsp_link.auto_zero_now(node=1)
             self.tsp_link.auto_zero_now(node=2)
-            self.tsp_link.set_output_level(outer_v, node=outer_node)
+            if inner.lower() == 'gate':
+                self.tsp_link.set_output_level(outer_v, node=outer_node)
+            else:
+                self._ramp_gate(v_from=latest_gate, v_to=outer_v)
+                latest_gate = outer_v
 
             for inner_v in inner_steps:
                 if self.current_measurement['type'] == 'aborting':
@@ -91,8 +103,8 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationMeasurementBase):
                 if inner.lower() == 'source':
                     self.tsp_link.set_output_level(inner_v, node=inner_node)
                 else:
-                    self._ramp_gate(v_from=latest_inner, v_to=inner_v)
-                    latest_inner = inner_v
+                    self._ramp_gate(v_from=latest_gate, v_to=inner_v)
+                    latest_gate = inner_v
                 time.sleep(params['source_measure_delay'])
 
                 if not self._check_I_source_status():
@@ -124,11 +136,7 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationMeasurementBase):
             comment='test() - double stepped',
             # inner='source',  # outer will be gate
             inner='gate',  # ourter will be source
-            params = {
-                'autozero': False,
-                'readback': False,
-                'source_measure_delay':  1e-3
-            },
+            params={'autozero': False, 'readback': False, 'source_measure_delay': 1e-3},
             source={
                 'v_low': -0.2,
                 'v_high': 1.0,
@@ -148,6 +156,7 @@ class ProbeStation2PointDoubleSteppedVSource(ProbeStationMeasurementBase):
                 'step_type': 'linear',
             },
         )
+
 
 if __name__ == '__main__':
     ps = ProbeStation2PointDoubleSteppedVSource()

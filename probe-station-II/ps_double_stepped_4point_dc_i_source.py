@@ -1,9 +1,11 @@
 import time
 import numpy as np
-from ps_dc_base import ProbeStationDCBase
+
+# from ps_dc_base import ProbeStationDCBase
+from ps_measurement_base import ProbeStationMeasurementBase
 
 
-class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
+class ProbeStation4PointDoubleSteppedISource(ProbeStationMeasurementBase):
     def __init__(self):
         # super().__init__(self=self)
         super().__init__()
@@ -25,7 +27,7 @@ class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
         labels = {'i_backgate': 'Gate current'}
         self._add_metadata(labels, 302, comment, nplc=gate['nplc'], limit=gate['limit'])
 
-        labels = {'v_xx': 'Vxx'}
+        labels = {'v_source': 'Vsource'}
         self._add_metadata(labels, 302, comment, nplc=source['nplc'])
         labels = {'current': 'Current'}
         self._add_metadata(
@@ -34,8 +36,7 @@ class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
         self.reset_current_measurement('4PointDoubleStepped')
 
     def dc_4_point_measurement_i_source(
-            self, comment, inner: str, source: dict, gate: dict,
-            params: dict, **kwargs
+        self, comment, inner: str, source: dict, gate: dict, params: dict, **kwargs
     ):
         """
         Perform a 4-point DC vi-measurement.
@@ -48,7 +49,7 @@ class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
         """
         self._setup_data_log(comment=comment, source=source, gate=gate)
         self._configure_instruments(source=source, gate=gate, params=params)
-        self.configure_dmm(source['limit'], source['nplc'])
+        # self.configure_dmm(source['limit'], source['nplc'])
 
         # Calculate the sweeps
         gate_steps = self._calculate_steps(
@@ -76,15 +77,19 @@ class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
             inner_node = 1  # Gate
             outer_node = 2  # Source
 
-        latest_inner = 0
+        latest_gate = 0
         for outer_v in outer_steps:
             if self.current_measurement['type'] == 'aborting':
                 continue
-
             print('Set outer to: {}'.format(outer_v))
             self.tsp_link.auto_zero_now(node=1)
             self.tsp_link.auto_zero_now(node=2)
-            self.tsp_link.set_output_level(outer_v, node=outer_node)
+
+            if inner.lower() == 'gate':
+                self.tsp_link.set_output_level(outer_v, node=outer_node)
+            else:
+                self._ramp_gate(v_from=latest_gate, v_to=outer_v)
+                latest_gate = outer_v
 
             for inner_v in inner_steps:
                 if self.current_measurement['type'] == 'aborting':
@@ -96,17 +101,17 @@ class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
                 if inner.lower() == 'source':
                     self.tsp_link.set_output_level(inner_v, node=inner_node)
                 else:
-                    self._ramp_gate(v_from=latest_inner, v_to=inner_v)
-                    latest_inner = inner_v
+                    self._ramp_gate(v_from=latest_gate, v_to=inner_v)
+                    latest_gate = inner_v
                 time.sleep(params['source_measure_delay'])
 
                 if not self._check_I_source_status():
                     # TODO!!! This always returns True!!!!
                     return
                 # Todo: This is a 4 (3....) point measurement - read DMM!
-                self.read(read_dmm=False)
+                self.read(read_dmm=True)
 
-        time.sleep(2)
+        time.sleep(1)
 
         data = self.read()
         v_from = data['v_backgate']
@@ -130,11 +135,7 @@ class ProbeStation4PointDoubleSteppedISource(ProbeStationDCBase):
             comment='test() - double stepped',
             # inner='source',  # outer will be gate
             inner='gate',  # ourter will be source
-            params = {
-                'autozero': False,
-                'readback': False,
-                'source_measure_delay':  1e-3
-            },
+            params={'autozero': False, 'readback': False, 'source_measure_delay': 1e-3},
             source={
                 'i_low': -5e-4,
                 'i_high': 2e-3,

@@ -2,7 +2,7 @@ import time
 import pyvisa as visa
 
 
-class Keithley2450():
+class Keithley2450:
     def __init__(self, interface='lan', hostname=''):
         if interface == 'lan':
             visa_string = 'TCPIP0::{}::inst0::INSTR'.format(hostname)
@@ -11,14 +11,13 @@ class Keithley2450():
 
         cmd = 'smu.measure.displaydigits = smu.DIGITS_6_5'
         self.instr.write(cmd)
-        
-        
+
     def reset_instrument(self):
         self.instr.write('reset()')
 
     # def lcd_brightness(self, value):
     # display.lightstate = display.STATE_LCD_75
-        
+
     def output_state(self, output_state: bool = None):
         """Turn the output on or off"""
         if output_state is not None:
@@ -27,9 +26,9 @@ class Keithley2450():
             else:
                 self.instr.write('smu.source.output = smu.OFF')
         actual_state_raw = self.instr.query('print(smu.source.output)')
-        actual_state = (actual_state_raw.find('smu.ON') > -1)
+        actual_state = actual_state_raw.find('smu.ON') > -1
         return actual_state
-    
+
     def set_source_function(self, function: str = None, source_range: float = None):
         if function.lower() in ('i', 'current'):
             self.instr.write('smu.source.func = smu.FUNC_DC_CURRENT')
@@ -44,7 +43,7 @@ class Keithley2450():
 
         # TODO - Readback currently hard-coded!
         self.instr.write('smu.source.readback = smu.ON')
-            
+
         actual_function = self.instr.query('print(smu.source.func)')
         # TODO: PARSE THIS INTO ENUM OF VOLTAGE AND CURRENT
         return actual_function
@@ -55,11 +54,9 @@ class Keithley2450():
                 self.instr.write('smu.measure.sense = smu.SENSE_4WIRE')
             else:
                 self.instr.write('smu.measure.sense = smu.SENSE_2WIRE')
-        actual_state = (
-            self.instr.query('print(smu.measure.sense)').find('4WIRE') > -1
-        )
+        actual_state = self.instr.query('print(smu.measure.sense)').find('4WIRE') > -1
         return actual_state
-    
+
     def set_sense_function(self, function: str = None, sense_range: float = None):
         """
         Set the sense range, a value of None returns the current value without
@@ -95,7 +92,7 @@ class Keithley2450():
     #     else:
     #         raise Exception('Function not allowed: {}'.format(function))
 
-    #     if action is not None:    
+    #     if action is not None:
     #         if action:
     #             scpi_action = 'On'
     #         else:
@@ -117,7 +114,6 @@ class Keithley2450():
     #     self.scpi_comm(cmd)
     #     return True
 
-    
     def set_limit(self, value: float):
         """
         Set the desired limit for voltage or current depending on current
@@ -156,7 +152,7 @@ class Keithley2450():
         cmd = 'print({} == nil)'.format(buffer)
         buffer_exists = self.instr.query(cmd).strip() == 'false'
         return buffer_exists
-    
+
     def make_buffer(self, buffer: str, size: int = 10):
         """
         Make a buffer of type FULL and fillmode continous
@@ -167,7 +163,7 @@ class Keithley2450():
 
         if self.buffer_exists(buffer):
             return False
-        
+
         # TODO: Check if STYLE_FULL actually makes sense
         cmd = '{} = buffer.make({}, buffer.STYLE_FULL)'.format(buffer, size)
         self.instr.write(cmd)
@@ -175,7 +171,7 @@ class Keithley2450():
         cmd = '{}.fillmode = buffer.FILL_CONTINUOUS'.format(buffer_name)
         self.instr.write(cmd)
         return True
-    
+
     def trigger_measurement(self, buffer='defbuffer1'):
         cmd = 'print(smu.measure.read({}))'.format(buffer)
         value = float(self.instr.query(cmd))
@@ -186,7 +182,7 @@ class Keithley2450():
             return False
         self.instr.write('{}.clear()'.format(buffer))
         return True
-    
+
     # def elements_in_buffer(self, buffer='defbuffer1'):
 
     def read_latest(self, buffer):
@@ -203,15 +199,10 @@ if __name__ == '__main__':
 
     k.set_source_function('i', 1)
     exit()
-    
+
     # K.make_buffer('test', 50)
 
-    
-    print(
-        k.instr.query(
-            'print(test == nil)'
-        )
-    )
+    print(k.instr.query('print(test == nil)'))
     exit()
     k.reset_instrument()
     k.trigger_measurement()
@@ -228,17 +219,18 @@ if __name__ == '__main__':
     n = int(k.instr.query('print(test.n)'))
     print('n is: ', n)
     for x in range(1, n + 1):
-        cmd = 'printbuffer({}, {}, test, test.units, test.relativetimestamps)'.format(x, x)
+        cmd = 'printbuffer({}, {}, test, test.units, test.relativetimestamps)'.format(
+            x, x
+        )
         print(k.instr.query(cmd).strip())
     # cmd = 'end'
 
-    
     # k.set_limit(1e-9)
     # print(k.query_limit())
 
     # k.make_buffer('test', 50)
     # k.trigger_measurement('test')
-    
+
     # def set_auto_zero(self, function: str, action: bool = None):
     #     """
     #     Set auto-zero behaviour for a given function (voltage or current).
@@ -251,7 +243,7 @@ if __name__ == '__main__':
     #     else:
     #         raise Exception('Function not allowed: {}'.format(function))
 
-    #     if action is not None:    
+    #     if action is not None:
     #         if action:
     #             scpi_action = 'On'
     #         else:
@@ -285,8 +277,7 @@ if __name__ == '__main__':
     #         self.scpi_comm(cmd.format('RESISTANCE', scpi_action))
     #     cmd = 'SENSE:VOLTAGE:RSENSE?'
     #     reply = self.scpi_comm(cmd)
-    #     return reply                           
-    
+    #     return reply
 
     # def read_from_buffer(self, start, stop, buffer='defbuffer1'):
     #     data = []
@@ -297,4 +288,3 @@ if __name__ == '__main__':
     #         reading = self._parse_raw_reading(raw)
     #         data.append(reading)
     #     return data
-
