@@ -1,0 +1,16 @@
+description = 'Moorfield 3138 cooling water'
+
+
+[RTDs]
+cooling_water_moorfield_4138_rtd_temp_in.v_ex = 3.3
+cooling_water_moorfield_4138_rtd_temp_in.r_shunt = 3290
+
+[database]
+table = 'dateplots_cooling_water'
+
+[ADC_mapping]
+# i2c_adress.codename = [adc_index, offset, scale, min_log_value]
+0x48.cooling_water_moorfield_4138_rtd_temp_in = [0, -259.67, 2.596728123, 0.2] # [0, -100/38.51, 1/0.3851]
+0x48.cooling_water_moorfield_4138_pressure_in = [1,  -1, 4, 0.1]
+0x48.cooling_water_moorfield_4138_conductivity = [2,  0, 4, 0.1]
+0x48.cooling_water_moorfield_4138_conductivity_temp = [3,  0,  28, 0.2]
