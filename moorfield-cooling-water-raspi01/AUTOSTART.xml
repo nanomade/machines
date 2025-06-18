@@ -1,0 +1,8 @@
+<autostart>
+  <name>MOORFIELD_4138_COOLINGWATER_AUTOSTART</name> <!-- no spaces -->
+  <session>
+    <startdelay>15</startdelay>
+    <command>~/venv/bin/python ~/PyExpLabSys/PyExpLabSys/standard_loggers/ads_analog_logger.py</command>
+    <name>4138 cooling water</name>
+  </session>
+</autostart>

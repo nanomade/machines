@@ -1,0 +1,5 @@
+id: Moorfield cooling water monitor
+purpose: Keep an eye on the cooling water for the Moorfield systems
+
+Reads temperature, pressure, conductivity and (hopefully soon) flow of the
+Moorfield systems.
