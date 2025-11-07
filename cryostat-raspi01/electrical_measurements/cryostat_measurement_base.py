@@ -5,7 +5,7 @@ import socket
 import Gpib  # linux-gpib, user space wrapper to kernel driver
 
 from PyExpLabSys.drivers.keithley_2000 import Keithley2000
-from PyExpLabSys.drivers.keithley_2400 import Keithley2400
+from PyExpLabSys.drivers.keithley_2450 import Keithley2450
 from PyExpLabSys.drivers.keithley_6220 import Keithley6220
 # Todo: Check why CustomColumn is needed???
 from PyExpLabSys.common.database_saver import DataSetSaver, CustomColumn
@@ -24,8 +24,10 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
     'v_xy': [],
     'dv_di': [],
     'theta': [],
-    'v_backgate': [],  # Back gate voltage
-    'i_backgate': [],  # Bakc gate leak-current
+    'v_backgate': [],
+    'i_backgate': [],
+    'v_frontgate': [],
+    'i_frontgate': [],
     'b_field': [],
     'vti_temp': [],
     'sample_temp': [],
@@ -33,22 +35,22 @@ CURRENT_MEASUREMENT_PROTOTYPE = {
 
 
 class CryostatMeasurementBase(object):
-    def __init__(self):
+    def __init__(self, trigger_list):
         self.current_measurement = CURRENT_MEASUREMENT_PROTOTYPE.copy()
 
-        self.current_source = Keithley6220(interface='lan', hostname='192.168.0.3')
-        self.back_gate = Keithley2400(
-            interface='serial',
-            device='/dev/serial/by-id/usb-FTDI_Chipi-X_FT6F1A7R-if00-port0',
-            baudrate=19200,
-        )
+        self.current_source = Keithley6220(interface='lan', path='192.168.0.3')
+        self.back_gate = Keithley2450(interface='lan', device='192.168.0.30')
+        self.front_gate = Keithley2450(interface='lan', device='192.168.0.31')
         self.dmm = Keithley2000(
             interface='serial',
             device='/dev/serial/by-id/usb-FTDI_Chipi-X_FT6EYK1T-if00-port0',
             baudrate=9600,
         )
 
-        self.nanov1 = None  # Used for DC measurements
+        # TODO: Currently we trig all instruments; we should aim towards
+        # trigging only the ones we will actually use
+        self.back_gate.configure_digital_port_as_triggers(trigger_list)
+
         self.lock_in = None  # Used for AC measurements
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -65,76 +67,8 @@ class CryostatMeasurementBase(object):
                                            credentials.user, credentials.passwd)
         self.data_set_saver.start()
 
-    # Todo, take arguments to check only the needed instruments, or
-    # check each instrument but report error only if it is not None
     def _identify_all_instruments(self):
-        found_all = True
-        try:
-            nanov1_id = self.nanov1.read_software_version()
-        except Gpib.gpib.GpibError:
-            nanov1_id = ''
-        if nanov1_id.find('MODEL 2182A') > 0:
-            # print('Found Keithley 2182A at GPIB 7. Nano Voltmeter')
-            pass
-        else:
-            print('Did NOT find 2181A at GPIB 7!!!!!!')
-            found_all = False
-
-        try:
-            lock_in_id = self.lock_in.read_software_version()
-        except Gpib.gpib.GpibError:
-            lock_in_id = ''
-        if lock_in_id.find('SR830') > 0:
-            # print('Found SRS 830 at GPIB 8. Lock-In amplifier')
-            pass
-        else:
-            print('Did NOT find SRS 830 at GPIB 8!!!')
-            found_all = False
-
-        try:
-            current_source_id = self.current_source.read_software_version()
-        except Gpib.gpib.GpibError:
-            current_source_id = ''
-        if current_source_id.find('MODEL 6221') > 0:
-            # print('Found Keithley 6221 at GPIB 12. Current source')
-            pass
-        else:
-            print('Did NOT find 6221 at GPIB 12!!!!!!')
-            found_all = False
-
-        try:
-            dmm_id = self.dmm.read_software_version()
-        except Gpib.gpib.GpibError:
-            dmm_id = ''
-        if dmm_id.find('MODEL 2000') > 0:
-            # print('Found Keithley 2000 at GPIB 16. General purpose DMM')
-            pass
-        else:
-            print('Did NOT find Keithley 2000 at GPIB 16!!!')
-            found_all = False
-
-        try:
-            back_gate_id = self.back_gate.read_software_version()
-        except Gpib.gpib.GpibError:
-            back_gate_id = ''
-        # todo: Also check S/N to verify correct instrument is connected
-        if back_gate_id.find('MODEL 2400') > 0:
-            # print('Found Keithley 2400 at GPIB 22. Use for Back Gate')
-            pass
-        else:
-            print('Did NOT find Keithley 2400!!! No Back Gate!!!')
-            found_all = False
-        return found_all
-
-    def _scan_gpib(self):
-        for i in range(0, 30):
-            device = Gpib.Gpib(0, pad=i)
-            try:
-                device.write('*IDN?')
-            except Gpib.gpib.GpibError:
-                continue
-            reply = device.read()
-            print('{}: {}'.format(i, reply))
+        raise NotImplementedError
 
     def _read_socket(self, cmd):
         try:
@@ -159,25 +93,35 @@ class CryostatMeasurementBase(object):
         if None not in data.values():
             self.add_to_current_measurement(data)
 
-    def _configure_back_gate(self):
-        """
-        Configure the 2400 for gating. This instrument is used for gating in
-        many configuration, and thus lives in measurement base
-        """
+    def configure_front_gate(self):
+        # Todo: take limit as an argument
+        # Todo: abstract this to configure either front or back gate
+        self.front_gate.clear_buffer()
+        self.front_gate.set_source_function('v')
+        self.front_gate.set_current_limit(1e-7)
+        self.front_gate.set_voltage(0)
+        self.front_gate.output_state(True)
+        print('Read latest value from back gate (verify read works)')
+        self.front_gate.trigger_measurement()
+        data = self.front_gate.read_latest()
+        print(data)
+
+    def configure_back_gate(self):
+        # Todo: take limit as an argument
+        # Todo: abstract this to configure either front or back gate
+        self.back_gate.clear_buffer()
         self.back_gate.set_source_function('v')
         self.back_gate.set_current_limit(1e-7)
         self.back_gate.set_voltage(0)
         self.back_gate.output_state(True)
-        self.back_gate.read_current()
-
-    def instrument_id(self):
-        found_all = self._identify_all_instruments()
-        if not found_all:
-            self._scan_gpib()
+        print('Read latest value from back gate (verify read works)')
+        self.back_gate.trigger_measurement()
+        data = self.back_gate.read_latest()
+        print(data)
 
     def set_lock_in_frequency(self, frequency: float):
         # Will be re-implemented in AC classes
-        pass
+        raise NotImplementedError
 
     def reset_current_measurement(self, measurement_type, error=False):
         """
@@ -265,19 +209,23 @@ class CryostatMeasurementBase(object):
         # yield?
         return step_list
 
-    def read_gate(self, store_data=True):
-        voltage, current = self.back_gate.read_volt_and_current()
-        # voltage = self.back_gate.read_voltage()
-        if not store_data:
-            # This is just misuse to start a trigger
-            return voltage
-        # current = self.back_gate.read_current()
+    def read_gate(self):
+        back_gate_data = self.back_gate.read_latest()
         data = {
-            'v_backgate': voltage,
-            'i_backgate': current
+            'v_backgate': back_gate_data['source_value'],
+            'i_backgate': back_gate_data['value']
         }
+
+        if self.front_gate is not None:
+            front_gate_data = self.front_gate.read_latest()
+            data.update(
+                {
+                'v_frontgate': front_gate_data['source_value'],
+                'i_frontgate': front_gate_data['value']
+                }
+            )
         self.add_to_current_measurement(data)
-        return voltage
+        return data['v_backgate']
 
     def dummy_background_measurement(self):
         # This should be a simple measurement that runs
