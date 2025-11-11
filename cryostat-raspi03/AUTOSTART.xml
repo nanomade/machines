@@ -1,0 +1,9 @@
+<autostart>
+  <name>Cryostat12THealthLoggerLogger</name> <!-- no spaces -->
+  <session>
+    <startdelay>5</startdelay>
+    <command>/home/pi/venv/bin/python datalogger.py</command>
+    <name>Datalogger</name>
+  </session>
+
+</autostart>
