@@ -1,0 +1,5 @@
+id: cryostat-raspi03
+purpose: Logs health related temperatures on the 12T cryostat.
+
+Logs the temperature of various components such as VTI circulation
+pump, He return line, cooling water and the outside of the VTI.
